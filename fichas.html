@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daggerheart — Fichas de Personagem</title>
+<style>
+:root {
+  --bg:#12111a; --surface:#1e1d2e; --surface2:#252438; --surface3:#2e2d44;
+  --border:rgba(200,170,90,.22); --border-hi:rgba(200,170,90,.55);
+  --accent:#c8aa5a; --accent-dim:rgba(200,170,90,.12);
+  --text:#e8dcc8; --text-dim:#8a7f70;
+  --hp:#e05050; --fp:#9b6fc4; --hope:#e0a030; --ar:#4a9aba;
+  --ok:#2ecc71; --danger:#c0392b; --r:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.screen{display:none}.screen.active{display:block}
+/* ── HEADER ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px}
+.hdr-title{font-family:Georgia,serif;font-size:1.3rem;color:var(--accent);letter-spacing:2px;flex:1}
+.hdr-sub{font-size:.75rem;color:var(--text-dim)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .18s}
+.btn-primary{background:var(--accent);color:#12111a}.btn-primary:hover{background:#d4bc6f}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#e74c3c}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+/* ── LIST SCREEN ── */
+.list-wrap{max-width:920px;margin:0 auto;padding:24px 18px}
+.list-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.list-top h2{font-size:1rem;color:var(--text-dim);font-weight:normal}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.char-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s;position:relative}
+.char-card:hover{border-color:var(--accent);box-shadow:0 0 18px rgba(200,170,90,.1)}
+.cc-cls{font-size:.68rem;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.cc-name{font-family:Georgia,serif;font-size:1.15rem;margin-bottom:2px}
+.cc-sub{font-size:.78rem;color:var(--text-dim);margin-bottom:10px}
+.cc-stats{display:flex;gap:14px;font-size:.78rem;color:var(--text-dim)}
+.cc-stats strong{color:var(--text)}
+.cc-acts{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.empty-state h3{margin-bottom:8px;font-size:1.1rem}.empty-state p{font-size:.88rem;margin-bottom:22px}
+/* ── FORM SCREEN ── */
+.form-wrap{max-width:880px;margin:0 auto;padding:20px 18px}
+.fsec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.fsec-hdr{background:var(--surface2);padding:8px 14px;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}.fsec-hdr .fsec-arrow{font-size:.7rem;color:var(--text-dim);transition:transform .2s;flex-shrink:0}.fsec-hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}.fsec.collapsed .fsec-arrow{transform:rotate(-90deg)}.fsec.collapsed .fsec-body{display:none}
+.fsec-body{padding:14px}
+.frow{display:grid;gap:10px;margin-bottom:10px}.frow:last-child{margin-bottom:0}
+.frow.c2{grid-template-columns:1fr 1fr}.frow.c3{grid-template-columns:1fr 1fr 1fr}
+.frow.c4{grid-template-columns:1fr 1fr 1fr 1fr}.frow.c6{grid-template-columns:repeat(6,1fr)}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)}
+.fg input,.fg textarea,.fg select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 9px;font-size:.88rem;font-family:inherit;width:100%}
+.fg input:focus,.fg textarea:focus,.fg select:focus{outline:none;border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:54px}
+select option{background:var(--surface2)}
+.attr-in{text-align:center;font-size:1rem;font-weight:700}
+/* class picker */
+.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.cls-opt{border:2px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer;transition:all .18s;text-align:center}
+.cls-opt:hover{border-color:var(--accent);background:var(--accent-dim)}
+.cls-opt.sel{border-color:var(--accent);background:var(--accent-dim)}
+.cls-opt-name{font-family:Georgia,serif;font-size:.98rem;color:var(--accent);margin-bottom:3px}
+.cls-opt-sub{font-size:.65rem;color:var(--text-dim)}
+/* weapon block */
+.wb{border:1px solid var(--border);border-radius:var(--r);padding:12px;background:rgba(0,0,0,.18)}
+.wb h4{font-size:.65rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+/* exp rows */
+.exp-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.exp-row-lbl{font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);white-space:nowrap;min-width:24px;text-align:right}
+.exp-row-nome{flex:1}
+.exp-row-val{width:70px;text-align:center}
+.inv-card{border:1px solid var(--border);border-radius:var(--r);padding:10px;background:rgba(0,0,0,.18);margin-bottom:8px}
+.inv-card-row{display:grid;grid-template-columns:1fr 80px 28px;gap:8px;align-items:end;margin-bottom:6px}
+.inv-card-row:last-child{margin-bottom:0}
+.inv-card .del-btn{background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);border-radius:4px;cursor:pointer;width:28px;height:100%;font-size:.85rem;align-self:end;padding:7px 0}
+.inv-card .del-btn:hover{color:var(--danger)}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;padding:10px 0}
+/* ── SESSION SCREEN ── */
+.sess-wrap{max-width:1080px;margin:0 auto;padding:12px 14px}
+.sess-lay{display:grid;grid-template-columns:340px 1fr;gap:12px;align-items:start}
+.ss{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.ss-hdr{background:var(--surface2);padding:7px 13px;font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ss-body{padding:12px}
+.char-hdr{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.char-hdr-name{font-family:Georgia,serif;font-size:1.35rem;margin-bottom:2px}
+.char-hdr-meta{font-size:.78rem;color:var(--text-dim);display:flex;gap:14px;flex-wrap:wrap}
+.char-hdr-meta strong{color:var(--accent)}
+/* track boxes */
+.track-lbl{font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;display:flex;justify-content:space-between}
+.boxes{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.box{width:26px;height:26px;border-radius:4px;border:2px solid;cursor:pointer;transition:all .14s;flex-shrink:0}
+.box.hp{border-color:var(--hp)}.box.hp.on{background:var(--hp)}.box.hp:hover{box-shadow:0 0 7px var(--hp)}
+.box.fp{border-color:var(--fp)}.box.fp.on{background:var(--fp)}.box.fp:hover{box-shadow:0 0 7px var(--fp)}
+.box.ar{border-color:var(--ar)}.box.ar.on{background:var(--ar)}.box.ar:hover{box-shadow:0 0 7px var(--ar)}
+/* hope gems */
+.gems{display:flex;gap:7px;flex-wrap:wrap}
+.gem{width:34px;height:34px;border-radius:50%;border:2px solid var(--hope);cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;font-size:.9rem;user-select:none}
+.gem.on{background:var(--hope)}.gem:hover{box-shadow:0 0 10px var(--hope)}
+/* dmg thresholds flow */
+.dmg-flow{display:flex;align-items:center;margin-bottom:12px}
+.dmg-type{flex:1;text-align:center;background:var(--surface2);border:1px solid var(--border);padding:8px 4px}
+.dmg-type:first-child{border-radius:var(--r) 0 0 var(--r)}
+.dmg-type:last-child{border-radius:0 var(--r) var(--r) 0}
+.dmg-type-lbl{font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.dmg-type-sub{font-size:.58rem;color:var(--text-dim)}
+.dmg-sep{display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding:6px 8px;background:var(--surface3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.dmg-sep-val{font-size:1rem;font-weight:700;color:var(--accent);line-height:1;margin-bottom:2px}
+.dmg-sep-arr{font-size:.6rem;color:var(--text-dim)}
+.dmg-type.dm .dmg-type-lbl{color:var(--ok)}.dmg-type.dm{border-color:var(--ok)}
+.dmg-type.dM .dmg-type-lbl{color:var(--hope)}.dmg-type.dM{border-color:var(--hope)}
+.dmg-type.dG .dmg-type-lbl{color:var(--hp)}.dmg-type.dG{border-color:var(--hp)}
+/* attrs display */
+.attr-disp{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.abox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:7px;text-align:center}
+.abox-lbl{font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:1px}
+.abox-val{font-size:1.2rem;font-weight:700}
+.abox-val.pos{color:var(--ok)}.abox-val.neg{color:var(--hp)}.abox-val.zer{color:var(--text-dim)}
+/* stat big */
+.stat-big{text-align:center;background:var(--surface2);border:2px solid var(--border);border-radius:var(--r);padding:9px}
+.stat-big-lbl{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)}
+.stat-big-val{font-size:1.8rem;font-weight:700;line-height:1;margin-top:1px}
+.ev-val{color:var(--ok)}.ar-val{color:var(--ar)}
+/* weapon display */
+.wd{border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px;background:rgba(0,0,0,.18)}
+.wd-type{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.wd-name{font-weight:700;font-size:.9rem;margin-bottom:3px}
+.wd-meta{font-size:.78rem;color:var(--text-dim);margin-bottom:3px}
+.wd-skill{font-size:.75rem;font-style:italic;color:var(--text-dim);border-top:1px solid var(--border);padding-top:5px;margin-top:5px}
+/* class abilities */
+.ca{margin-bottom:9px;padding:9px;background:var(--accent-dim);border:1px solid rgba(200,170,90,.25);border-radius:var(--r)}
+.ca-name{font-weight:700;font-size:.8rem;color:var(--accent);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.ca-desc{font-size:.76rem;color:var(--text-dim);line-height:1.55;white-space:pre-line}
+.hope-ab{margin-top:9px;padding:7px 10px;background:rgba(224,160,48,.1);border:1px solid rgba(224,160,48,.25);border-radius:var(--r);font-size:.76rem;color:var(--text-dim);line-height:1.5;font-style:italic}
+/* exp display */
+.exp-dr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.exp-dr:last-child{border-bottom:none}
+.exp-mod{font-weight:700;color:var(--accent);min-width:28px;text-align:right}
+/* prof */
+.prof-row{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pbox{width:18px;height:18px;border-radius:50%;border:2px solid var(--accent);cursor:pointer;transition:background .14s}
+.pbox.on{background:var(--accent)}
+/* gold */
+.gold-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gold-box{text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:7px}
+.gold-lbl{font-size:.62rem;color:var(--accent);letter-spacing:1px;text-transform:uppercase}
+.gold-in{background:none;border:none;color:var(--text);font-size:1.1rem;font-weight:700;text-align:center;width:100%;margin-top:3px;padding:0}
+.gold-in:focus{outline:none}
+/* inv list */
+.inv-disp{list-style:none;margin-bottom:12px}
+.inv-disp li{padding:7px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.inv-disp li:last-child{border-bottom:none}
+.inv-disp li:empty{display:none}
+.inv-item-info{flex:1;min-width:0}
+.inv-item-name{font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.inv-item-qtd{font-size:.75rem;color:var(--accent);background:var(--accent-dim);border:1px solid var(--border-hi);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.inv-item-desc{font-size:.75rem;color:var(--text-dim);margin-top:2px;font-style:italic}
+.inv-del-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.8rem;padding:2px 5px;border-radius:3px;line-height:1;flex-shrink:0;margin-top:1px}
+.inv-del-btn:hover{color:var(--danger)}
+/* inv add form */
+.inv-add-form{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.inv-add-form .frow{margin-bottom:8px}
+.inv-add-form .fg label{font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:3px}
+.inv-add-form .fg input,.inv-add-form .fg textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 9px;font-size:.85rem;font-family:inherit;width:100%}
+.inv-add-form .fg input:focus,.inv-add-form .fg textarea:focus{outline:none;border-color:var(--accent)}
+.inv-add-form .fg textarea{resize:none;height:46px}
+.inv-add-actions{display:flex;justify-content:flex-end;margin-top:6px}
+/* rest */
+.rest-row{display:flex;gap:7px}
+.rest-btn{flex:1;padding:7px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:.78rem;transition:all .18s}
+.rest-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* notif */
+.notif{position:fixed;bottom:18px;right:18px;background:var(--surface2);border:1px solid var(--accent);border-radius:var(--r);padding:9px 14px;font-size:.82rem;color:var(--accent);z-index:999;animation:sIn .25s ease}
+@keyframes sIn{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
+/* modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;max-width:380px;width:100%}
+.modal h3{margin-bottom:10px;color:var(--accent)}.modal p{margin-bottom:18px;color:var(--text-dim);font-size:.88rem}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end}
+/* misc */
+.divider{height:1px;background:var(--border);margin:10px 0}
+@media(max-width:760px){.sess-lay{grid-template-columns:1fr}.frow.c6{grid-template-columns:repeat(3,1fr)}.frow.c4{grid-template-columns:repeat(2,1fr)}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+input[type=number]{-moz-appearance:textfield}
+/* weapon block field alignment */
+.wb .frow{align-items:end}
+/* attribute upgrade toggle */
+.chk-toggle{display:block;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;cursor:pointer;text-align:center;font-size:.75rem;color:var(--text-dim);transition:all .18s;user-select:none}
+.chk-toggle input{display:none}
+.chk-toggle:has(input:checked){background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+/* upgraded attr box in session */
+.abox.upgraded{border-color:var(--accent)}
+.abox.upgraded .abox-lbl::after{content:'↑';color:var(--accent);margin-left:4px}
+/* temp values */
+.temp-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-dim)}
+.temp-in{background:var(--surface2);border:1px solid rgba(224,160,48,.35);border-radius:var(--r);color:var(--hope);font-weight:700;padding:3px 8px;font-size:.88rem;text-align:center;width:62px}
+.temp-in:focus{outline:none;border-color:var(--hope)}
+/* evolution tiers */
+.evo-tier{border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:12px;background:rgba(0,0,0,.14)}
+.evo-tier.active{border-color:var(--accent)}
+.evo-tier-hdr{font-size:.65rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.evo-tier.active .evo-tier-hdr{color:var(--accent)}
+.evo-tier-note{font-size:.78rem;background:var(--accent-dim);border:1px solid rgba(200,170,90,.2);border-radius:var(--r);padding:8px 10px;margin-bottom:10px;color:var(--text);line-height:1.5}
+.evo-tier.p3 .evo-tier-note,.evo-tier.p4 .evo-tier-note{background:rgba(74,154,186,.08);border-color:rgba(74,154,186,.2)}
+.evo-tier-inst{font-size:.75rem;color:var(--text-dim);margin-bottom:8px}
+.evo-opt{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(200,170,90,.08)}
+.evo-opt:last-of-type{border-bottom:none}
+.evo-chk-group{display:flex;gap:6px;flex-shrink:0}
+.evo-chk-lbl{display:block;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;cursor:pointer;font-size:.75rem;color:var(--text-dim);transition:all .18s;user-select:none;white-space:nowrap}
+.evo-chk-lbl input{display:none}
+.evo-chk-lbl:has(input:checked){background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.evo-opt-txt{font-size:.8rem;color:var(--text);line-height:1.5;flex:1}
+.evo-tier-footer{font-size:.73rem;color:var(--text-dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5;font-style:italic}
+/* multiclass */
+.multi-cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.multi-cls-opt{border:2px solid var(--border);border-radius:var(--r);padding:9px;cursor:pointer;transition:all .18s;text-align:center;font-size:.88rem}
+.multi-cls-opt:hover{border-color:var(--accent);background:var(--accent-dim)}
+.multi-cls-opt.sel{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700}
+.multi-cls-opt.disabled{opacity:.3;cursor:default;pointer-events:none}
+.dom-row{display:flex;gap:8px;margin-bottom:12px}
+.dom-opt{flex:1;border:2px solid var(--border);border-radius:var(--r);padding:8px;cursor:pointer;text-align:center;font-size:.82rem;transition:all .18s}
+.dom-opt:hover{border-color:var(--hope);background:rgba(224,160,48,.08)}
+.dom-opt.sel{border-color:var(--hope);background:rgba(224,160,48,.1);color:var(--hope);font-weight:700}
+.dom-opt.disabled{opacity:.35;cursor:default;pointer-events:none;border-style:dashed}
+.multi-toggle{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.multi-toggle-lbl{font-size:.82rem;color:var(--text-dim);cursor:pointer;user-select:none}
+.multi-toggle input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title">⚔ DAGGERHEART</div>
+  <div class="hdr-sub" id="hdr-sub">Fichas de Personagem</div>
+  <button class="btn btn-ghost btn-sm" id="btn-back" style="display:none" onclick="goHome()">← Voltar</button>
+</div>
+
+<!-- SCREEN: LIST -->
+<div id="screen-list" class="screen active">
+  <div class="list-wrap">
+    <div class="list-top">
+      <h2 id="char-count-lbl">Seus personagens</h2>
+      <button class="btn btn-primary" onclick="showForm()">+ Novo Personagem</button>
+    </div>
+    <div class="char-grid" id="char-grid"></div>
+    <div class="empty-state" id="empty-state" style="display:none">
+      <h3>Nenhum personagem ainda</h3>
+      <p>Crie seu primeiro personagem para começar.</p>
+      <button class="btn btn-primary" onclick="showForm()">+ Criar Personagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: FORM -->
+<div id="screen-form" class="screen">
+  <div class="form-wrap">
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Classe<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="cls-grid" id="cls-grid"></div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Identidade<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c3">
+          <div class="fg"><label>Nome</label><input id="f-nome" type="text" placeholder="Nome do personagem"></div>
+          <div class="fg"><label>Herança</label><input id="f-heranca" type="text" placeholder="Ex: Humano, Elfo…"></div>
+          <div class="fg"><label>Gênero</label><input id="f-genero" type="text" placeholder="Ex: Masculino…"></div>
+        </div>
+        <div class="frow c3">
+          <div class="fg"><label>Subclasse</label><input id="f-subclasse" type="text" placeholder="Ex: Baluarte…"></div>
+          <div class="fg"><label>Nível</label><input id="f-nivel" type="number" min="1" max="10" value="1" oninput="renderEvoSection(getEvoFromForm(null),this.value)"></div>
+          <div class="fg"><label>Proficiência (nº)</label><input id="f-prof" type="number" min="1" max="6" value="1"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Atributos<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c6">
+          <div class="fg"><label>Agilidade</label><input id="f-agi" type="number" class="attr-in" value="0"></div>
+          <div class="fg"><label>Força</label><input id="f-for" type="number" class="attr-in" value="0"></div>
+          <div class="fg"><label>Acuidade</label><input id="f-acu" type="number" class="attr-in" value="0"></div>
+          <div class="fg"><label>Instinto</label><input id="f-ins" type="number" class="attr-in" value="0"></div>
+          <div class="fg"><label>Presença</label><input id="f-pre" type="number" class="attr-in" value="0"></div>
+          <div class="fg"><label>Conhecimento</label><input id="f-con" type="number" class="attr-in" value="0"></div>
+        </div>
+        <div class="frow c6">
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-agi-up"><input type="checkbox" id="f-agi-up"><span id="f-agi-up-lbl">—</span></label></div>
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-for-up"><input type="checkbox" id="f-for-up"><span id="f-for-up-lbl">—</span></label></div>
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-acu-up"><input type="checkbox" id="f-acu-up"><span id="f-acu-up-lbl">—</span></label></div>
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-ins-up"><input type="checkbox" id="f-ins-up"><span id="f-ins-up-lbl">—</span></label></div>
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-pre-up"><input type="checkbox" id="f-pre-up"><span id="f-pre-up-lbl">—</span></label></div>
+          <div class="fg"><label>↑ Evoluído</label><label class="chk-toggle" for="f-con-up"><input type="checkbox" id="f-con-up"><span id="f-con-up-lbl">—</span></label></div>
+        </div>
+        <div class="frow c4">
+          <div class="fg"><label>Evasão base da classe</label><input id="f-ev-base" type="text" value="—" readonly style="color:var(--accent);font-weight:700;text-align:center;cursor:default"></div>
+          <div class="fg"><label>Evasão (bônus adicional)</label><input id="f-ev-bonus" type="number" value="0" min="0"></div>
+          <div class="fg"><label>PV Máximo</label><input id="f-pv-max" type="number" min="1" value="6"></div>
+          <div class="fg"><label>PF Máximo (Fadiga)</label><input id="f-pf-max" type="number" min="1" value="6"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Saúde & Limiares de Dano<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <p style="font-size:.75rem;color:var(--text-dim);margin-bottom:10px">Some seu nível atual aos limiares base para obter os valores finais.</p>
+        <div class="frow c2">
+          <div class="fg"><label>Limiar Menor</label><input id="f-dm" type="number" min="0" value="0" placeholder="Ex: 5"></div>
+          <div class="fg"><label>Limiar Grave</label><input id="f-dG" type="number" min="0" value="0" placeholder="Ex: 11"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Armas Ativas<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c2">
+          <div class="wb">
+            <h4>Principal</h4>
+            <div class="frow"><div class="fg"><label>Nome</label><input id="f-wp-nome" type="text" placeholder="Ex: Rapieira"></div></div>
+            <div class="frow c3">
+              <div class="fg"><label>Atributo & Alcance</label><input id="f-wp-attr" type="text" placeholder="Ex: Presença CaC"></div>
+              <div class="fg"><label>Dados & Tipo de Dano</label><input id="f-wp-dados" type="text" placeholder="Ex: d8 fís"></div>
+              <div class="fg"><label>Empunhadura</label><select id="f-wp-maos"><option value="uma">Uma mão</option><option value="duas">Duas mãos</option></select></div>
+            </div>
+            <div class="frow"><div class="fg"><label>Habilidade</label><textarea id="f-wp-hab" rows="2" placeholder="Habilidade especial da arma…"></textarea></div></div>
+          </div>
+          <div class="wb">
+            <h4>Secundária</h4>
+            <div class="frow"><div class="fg"><label>Nome</label><input id="f-ws-nome" type="text" placeholder="Ex: Adaga"></div></div>
+            <div class="frow c3">
+              <div class="fg"><label>Atributo & Alcance</label><input id="f-ws-attr" type="text" placeholder="Ex: Acuidade CaC"></div>
+              <div class="fg"><label>Dados & Tipo de Dano</label><input id="f-ws-dados" type="text" placeholder="Ex: d8 fís"></div>
+              <div class="fg"><label>Empunhadura</label><select id="f-ws-maos"><option value="uma">Uma mão</option><option value="duas">Duas mãos</option></select></div>
+            </div>
+            <div class="frow"><div class="fg"><label>Habilidade</label><textarea id="f-ws-hab" rows="2" placeholder="Habilidade especial da arma…"></textarea></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Armadura Ativa<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c3">
+          <div class="fg"><label>Nome</label><input id="f-arm-nome" type="text" placeholder="Ex: Gibão"></div>
+          <div class="fg"><label>Limiares Base</label><input id="f-arm-lim" type="text" placeholder="Ex: 5/11"></div>
+          <div class="fg"><label>Armadura Base (PA máx)</label><input id="f-arm-base" type="number" min="0" value="3"></div>
+        </div>
+        <div class="frow"><div class="fg"><label>Habilidade</label><textarea id="f-arm-hab" rows="2" placeholder="Ex: Flexível: +1 em Evasão"></textarea></div></div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Experiências <span class="fsec-hdr-right"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addExpRow()">+ Experiência</button><span class="fsec-arrow">▼</span></span></div>
+      <div class="fsec-body" id="exp-rows">
+        <!-- generated -->
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Ouro<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c3">
+          <div class="fg"><label>Punhados</label><input id="f-g-p" type="number" min="0" value="0"></div>
+          <div class="fg"><label>Bolsas</label><input id="f-g-b" type="number" min="0" value="0"></div>
+          <div class="fg"><label>Baú</label><input id="f-g-bau" type="number" min="0" value="0"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Inventário <span class="fsec-hdr-right"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addInvRow()">+ Item</button><span class="fsec-arrow">▼</span></span></div>
+      <div class="fsec-body" id="inv-rows"></div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Armas no Inventário<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="frow c2">
+          <div class="wb">
+            <h4>Arma no Inventário 1</h4>
+            <div class="frow"><div class="fg"><label>Nome</label><input id="f-wi1-nome" type="text"></div></div>
+            <div class="frow c3">
+              <div class="fg"><label>Atributo & Alcance</label><input id="f-wi1-attr" type="text"></div>
+              <div class="fg"><label>Dados & Tipo</label><input id="f-wi1-dados" type="text"></div>
+              <div class="fg"><label>Empunhadura</label><select id="f-wi1-maos"><option value="uma">Uma mão</option><option value="duas">Duas mãos</option></select></div>
+            </div>
+            <div class="frow"><div class="fg"><label>Habilidade</label><textarea id="f-wi1-hab" rows="2"></textarea></div></div>
+            <div class="frow">
+              <div class="fg"><label>Tipo</label>
+                <select id="f-wi1-tipo"><option value="">—</option><option value="primaria">Primária</option><option value="secundaria">Secundária</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="wb">
+            <h4>Arma no Inventário 2</h4>
+            <div class="frow"><div class="fg"><label>Nome</label><input id="f-wi2-nome" type="text"></div></div>
+            <div class="frow c3">
+              <div class="fg"><label>Atributo & Alcance</label><input id="f-wi2-attr" type="text"></div>
+              <div class="fg"><label>Dados & Tipo</label><input id="f-wi2-dados" type="text"></div>
+              <div class="fg"><label>Empunhadura</label><select id="f-wi2-maos"><option value="uma">Uma mão</option><option value="duas">Duas mãos</option></select></div>
+            </div>
+            <div class="frow"><div class="fg"><label>Habilidade</label><textarea id="f-wi2-hab" rows="2"></textarea></div></div>
+            <div class="frow">
+              <div class="fg"><label>Tipo</label>
+                <select id="f-wi2-tipo"><option value="">—</option><option value="primaria">Primária</option><option value="secundaria">Secundária</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Habilidades de Classe Adicionais / Notas<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <div class="fg"><label>Notas / Habilidades extras</label><textarea id="f-notas" rows="4" placeholder="Cartas de domínio, notas de subclasse, etc."></textarea></div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Multiclasse<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body">
+        <label class="multi-toggle">
+          <input type="checkbox" id="f-multi-enabled" onchange="toggleMultiSection()">
+          <span class="multi-toggle-lbl">Habilitar multiclasse para este personagem</span>
+        </label>
+        <div id="multi-section" style="display:none">
+          <p style="font-size:.75rem;color:var(--text-dim);margin-bottom:10px">Ao optar por multiclasse, coloque uma das cartas fundamentais da nova classe na sua mão. Em seguida, escolha um domínio para expandir.</p>
+          <div class="fsec-hdr" style="background:none;border:none;padding:0 0 6px 0;margin-bottom:8px;font-size:.6rem">Escolha a classe adicional</div>
+          <div class="multi-cls-grid" id="multi-cls-grid"></div>
+          <div id="multi-dom-section" style="display:none">
+            <div class="fsec-hdr" style="background:none;border:none;padding:0 0 6px 0;margin-bottom:8px;font-size:.6rem">Escolha o domínio</div>
+            <div class="dom-row" id="multi-dom-row"></div>
+            <div id="multi-habs-preview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fsec">
+      <div class="fsec-hdr" onclick="toggleFsec(this)">Evolução de Personagem<span class="fsec-arrow">▼</span></div>
+      <div class="fsec-body" id="evo-section"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="goHome()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveChar()">💾 Salvar Personagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: SESSION -->
+<div id="screen-session" class="screen">
+  <div class="sess-wrap">
+    <div class="sess-lay">
+      <div id="sess-left"></div>
+      <div id="sess-right"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal" style="display:none">
+  <div class="modal">
+    <h3 id="modal-title">Confirmar</h3>
+    <p id="modal-msg">Tem certeza?</p>
+    <div class="modal-acts">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" id="modal-ok">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CLASS DATA
+// ══════════════════════════════════════════════════════════
+const CLS = {
+  bardo:{nome:'Bardo',sub:'Graça & Códice',ev:10,
+    ha:'Fazer uma Cena: gaste 3 Pontos de Esperança para distrair temporariamente um alvo próximo, aplicando uma penalidade de –2 à Dificuldade dele.',
+    habs:[{n:'Inspiração',d:'Uma vez por sessão, descreva como você inspira o grupo e forneça a você e seus aliados um Dado de Inspiração. No 1º nível, seu Dado de Inspiração é d6. Um personagem pode rolar o Dado de Inspiração e somar o resultado a um teste, teste de reação ou rolagem de dano, ou para recuperar um número de PF igual ao resultado. No fim de cada sessão, Dados de Inspiração não utilizados são perdidos.\n\nNo 5º nível, seu Dado de Inspiração aumenta para d8.'}]},
+  druida:{nome:'Druida',sub:'Sabedoria & Arcano',ev:10,
+    ha:'Evolução: gaste 3 Pontos de Esperança para usar Forma de Fera sem marcar Pontos de Fadiga. Ao fazer isso, aumente um atributo em +1 até sair da Forma de Fera.',
+    habs:[{n:'Forma de Fera',d:'Marque 1 PF para se transformar magicamente em uma criatura de patamar igual ou menor que o seu na lista de Formas de Fera. Você pode sair dessa forma a qualquer momento. Enquanto estiver transformado, você não pode usar armas ou feitiços das cartas de domínio, mas feitiços conjurados antes da transformação permanecem ativos. Você recebe as habilidades da Forma de Fera escolhida, soma o bônus de Evasão dela à sua Evasão e usa o atributo especificado para atacar.'},{n:'Dádiva da Natureza',d:'Você pode criar à vontade efeitos sutis e inofensivos envolvendo a natureza, como fazer uma flor crescer rapidamente, invocar uma brisa ou acender uma fogueira.'}]},
+  feiticeiro:{nome:'Feiticeiro',sub:'Arcano & Meia-Noite',ev:10,
+    ha:'Magia Volátil: gaste 3 Pontos de Esperança para rolar novamente uma quantidade qualquer de dados de dano em um ataque que causa dano mágico.',
+    habs:[{n:'Sentido Arcano',d:'Você pode sentir a presença de objetos e pessoas com magia quando estão próximos.'},{n:'Ilusão Menor',d:'Faça um teste de conjuração (10). Em um sucesso, você cria uma ilusão visual em alcance próximo que parece convincente a qualquer um que esteja próximo ou mais distante.'},{n:'Canalizar Poder Bruto',d:'Uma vez por descanso longo, você pode colocar uma carta de domínio de sua mão na reserva e escolher entre: Receber Pontos de Esperança igual ao nível da carta; ou Aprimorar um feitiço que cause dano, recebendo um bônus na rolagem de dano igual ao dobro do nível da carta.'}]},
+  guardiao:{nome:'Guardião',sub:'Valor & Lâmina',ev:9,
+    ha:'Linha de Frente: gaste 3 Pontos de Esperança para recuperar 2 Pontos de Armadura.',
+    habs:[{n:'Determinação',d:'Uma vez por descanso longo, você pode ficar Determinado, recebendo um Dado de Determinação (d4 no 1º nível, d6 no 5º). Após cada rolagem de dano que tira PV de um alvo, aumente o dado em +1. Enquanto Determinado: reduz a gravidade do dano físico em uma categoria; soma o valor do dado às rolagens de dano; não pode ser Imobilizado ou ficar Vulnerável.'}]},
+  guerreiro:{nome:'Guerreiro',sub:'Lâmina e Falange',ev:11,
+    ha:'Sem Piedade: gaste 3 Pontos de Esperança para receber um bônus de +1 em testes de ataque até seu próximo descanso.',
+    habs:[{n:'Ataque de Oportunidade',d:'Se um adversário corpo a corpo tentar sair desse alcance, faça um teste de reação usando um atributo à sua escolha contra a Dificuldade dele. Em um sucesso, escolha um efeito; em um sucesso crítico, escolha dois: Ele não pode sair de onde está; Você causa dano igual ao dano de sua arma principal; Você se movimenta com ele.'},{n:'Treinamento de Combate',d:'Você ignora o tipo de empunhadura de armas equipadas. Ao causar dano físico, você recebe um bônus igual ao seu nível na rolagem de dano.'}]},
+  ladino:{nome:'Ladino',sub:'Meia-Noite & Graça',ev:12,
+    ha:'Esquiva de Ladino: gaste 3 Pontos de Esperança para receber um bônus de +2 na Evasão até o próximo ataque que acertar você. Caso contrário, esse bônus dura até seu próximo descanso.',
+    habs:[{n:'Oculto',d:'Sempre que estiver Escondido, em vez disso você fica Oculto. Enquanto Oculto, você permanece sem ser visto mesmo que um adversário se mova para onde normalmente o veria, desde que você fique parado. Ao concluir um movimento na linha de visão de um adversário, ou ao atacar, você deixa de estar Oculto.'},{n:'Ataque Furtivo',d:'Quando acertar um ataque enquanto estiver Oculto, ou enquanto um aliado estiver corpo a corpo ao seu alvo, some um número de d6 igual ao seu patamar à rolagem de dano.\n1º nível = 1º patamar | 2º–4º nível = 2º patamar | 5º–7º nível = 3º patamar | 8º–10º nível = 4º patamar'}]},
+  mago:{nome:'Mago',sub:'Códice & Esplendor',ev:11,
+    ha:'Não Dessa Vez: gaste 3 Pontos de Esperança para forçar um adversário distante ou mais próximo a refazer um teste de ataque ou uma rolagem de dano.',
+    habs:[{n:'Padrões Estranhos',d:'Escolha um número de 1 a 12. Ao rolar esse número em um Dado do Destino, receba 1 Ponto de Esperança ou recupere 1 Ponto de Fadiga. Você pode mudar o número durante um descanso longo.'},{n:'Prestidigitação',d:'Você pode executar efeitos mágicos sutis e inofensivos à vontade: mudar a cor de um objeto, criar um cheiro, acender uma vela, fazer um pequeno objeto flutuar, iluminar uma sala ou consertar um objeto pequeno.'}]},
+  patrulheiro:{nome:'Patrulheiro',sub:'Falange & Sabedoria',ev:12,
+    ha:'Segurem Eles: quando acerta um ataque com uma arma, você pode gastar 3 Pontos de Esperança para usar o mesmo teste contra dois adversários adicionais no alcance.',
+    habs:[{n:'Marca da Presa',d:'Gaste 1 Ponto de Esperança e ataque um alvo. Se acertar, cause dano normal e Marque o alvo. Enquanto marcado, você: sabe precisamente em que direção ele está; quando causar dano a esse alvo, ele deve marcar 1 PF; quando erra um ataque, você pode encerrar sua Marca da Presa para rolar seus Dados de Dualidade novamente.'}]},
+  serafim:{nome:'Serafim',sub:'Esplendor & Valor',ev:9,
+    ha:'Alicerce da Vida: gaste 3 Pontos de Esperança para recuperar 1 Ponto de Vida de um aliado próximo.',
+    habs:[{n:'Dados de Oração',d:'No início de cada sessão, role um número de d4 igual ao atributo de conjuração de sua subclasse — eles são seus Dados de Oração. Você pode gastar qualquer número deles para auxiliar a si mesmo ou um aliado até alcance distante: use o valor para reduzir dano sofrido, somar a uma rolagem, ou receber Esperança igual ao resultado. No fim de cada sessão, Dados de Oração não utilizados são perdidos.'}]}
+};
+
+const MULTI = {
+  bardo:{nome:'Bardo',doms:['Graça','Códice'],
+    habs:[{n:'Inspiração',d:'Uma vez por sessão, descreva como você inspira o grupo e forneça a você e seus aliados um Dado de Inspiração. No 1º nível, seu Dado de Inspiração é d6. Um personagem pode rolar o Dado de Inspiração e somar o resultado a um teste, teste de reação ou rolagem de dano, ou para recuperar um número de PF igual ao resultado. No fim de cada sessão, Dados de Inspiração não utilizados são perdidos.\n\nNo 5º nível, seu Dado de Inspiração aumenta para d8.'}]},
+  druida:{nome:'Druida',doms:['Sabedoria','Arcano'],
+    habs:[{n:'Forma de Fera',d:'Marque 1 PF para se transformar magicamente em uma criatura de patamar igual ou menor que o seu na lista de Formas de Fera. Você pode sair dessa forma a qualquer momento. Enquanto estiver transformado, você não pode usar armas ou feitiços das cartas de domínio, mas feitiços conjurados antes da transformação permanecem ativos, com sua duração normal, e você ainda pode falar e usar outras habilidades. Você recebe as habilidades da Forma de Fera escolhida, soma o bônus de Evasão dela à sua Evasão e usa o atributo especificado para atacar. Enquanto na Forma de Fera, sua armadura se torna parte de seu corpo e você marca PA normalmente; quando sai, esses PA permanecem marcados. Marcar seu último PV faz com que você saia da Forma de Fera.'},{n:'Dádiva da Natureza',d:'Você pode criar à vontade efeitos sutis e inofensivos envolvendo a natureza, como fazer uma flor crescer rapidamente, invocar uma brisa ou acender uma fogueira.'}]},
+  feiticeiro:{nome:'Feiticeiro',doms:['Arcano','Meia-Noite'],
+    habs:[{n:'Sentido Arcano',d:'Você pode sentir a presença de objetos e pessoas com magia quando estão próximos.'},{n:'Ilusão Menor',d:'Faça um teste de conjuração (10). Em um sucesso, você cria uma ilusão visual em alcance próximo. Ela não pode ultrapassar seu tamanho. Essa ilusão parece convincente a qualquer um que esteja próximo ou mais distante.'},{n:'Canalizar Poder Bruto',d:'Uma vez por descanso longo, você pode colocar uma carta de domínio de sua mão na reserva e escolher entre: Receber Pontos de Esperança igual ao nível da carta; ou Aprimorar um feitiço que cause dano, recebendo um bônus na rolagem de dano igual ao dobro do nível da carta.'}]},
+  guardiao:{nome:'Guardião',doms:['Valor','Lâmina'],
+    habs:[{n:'Determinação',d:'Uma vez por descanso longo, você pode ficar Determinado, recebendo um Dado de Determinação. No 1º nível, seu Dado de Determinação é d4; no 5º nível aumenta para d6. Coloque-o com o número 1 voltado para cima. Após cada rolagem de dano que tira 1 ou mais PV de um alvo, aumente o valor do dado em +1. Quando o dado for ultrapassar seu valor máximo, ou quando a cena acabar, encerre sua Determinação. Enquanto Determinado: você reduz a gravidade do dano físico em uma categoria; soma o valor atual do dado às rolagens de dano; não pode ser Imobilizado ou ficar Vulnerável.'}]},
+  guerreiro:{nome:'Guerreiro',doms:['Lâmina','Falange'],
+    habs:[{n:'Ataque de Oportunidade',d:'Se um adversário corpo a corpo tentar sair desse alcance, faça um teste de reação usando um atributo à sua escolha contra a Dificuldade dele. Em um sucesso, escolha um efeito; em um sucesso crítico, escolha dois: Ele não pode sair de onde está; Você causa dano a ele igual ao dano de sua arma principal; Você se movimenta com ele.'},{n:'Treinamento de Combate',d:'Você ignora o tipo de empunhadura de armas equipadas. Ao causar dano físico, você recebe um bônus igual ao seu nível na rolagem de dano.'}]},
+  ladino:{nome:'Ladino',doms:['Meia-Noite','Graça'],
+    habs:[{n:'Oculto',d:'Sempre que estiver Escondido, em vez disso você fica Oculto. Além dos benefícios da condição Escondido, enquanto Oculto você permanece sem ser visto mesmo que um adversário se mova para onde normalmente o veria, desde que você fique parado. Ao concluir um movimento dentro da linha de visão de um adversário, ou ao atacar, você deixa de estar Oculto.'},{n:'Ataque Furtivo',d:'Quando acertar um ataque enquanto estiver Oculto, ou enquanto um aliado estiver corpo a corpo ao seu alvo, some um número de d6 igual ao seu patamar à rolagem de dano.\n1º nível = 1º patamar | 2º–4º nível = 2º patamar | 5º–7º nível = 3º patamar | 8º–10º nível = 4º patamar'}]},
+  mago:{nome:'Mago',doms:['Códice','Esplendor'],
+    habs:[{n:'Padrões Estranhos',d:'Escolha um número de 1 a 12. Ao rolar esse número em um Dado do Destino, receba 1 Ponto de Esperança ou recupere 1 Ponto de Fadiga. Você pode mudar o número escolhido durante um descanso longo.'},{n:'Prestidigitação',d:'Você pode executar efeitos mágicos sutis e inofensivos à vontade. Por exemplo, você pode mudar a cor de um objeto, criar um cheiro, acender uma vela, fazer um pequeno objeto flutuar, iluminar uma sala ou consertar um objeto pequeno.'}]},
+  patrulheiro:{nome:'Patrulheiro',doms:['Falange','Sabedoria'],
+    habs:[{n:'Marca da Presa',d:'Gaste 1 Ponto de Esperança e ataque um alvo. Se acertar, cause o dano normal e Marque o alvo. Até o efeito desta habilidade acabar ou você Marcar outra criatura, receba os seguintes benefícios: você sabe precisamente em que direção ele está; quando causar dano a esse alvo, ele deve marcar 1 PF; quando erra um ataque contra ele, você pode encerrar sua Marca da Presa para rolar seus Dados de Dualidade novamente.'}]},
+  serafim:{nome:'Serafim',doms:['Esplendor','Valor'],
+    habs:[{n:'Dados de Oração',d:'No início de cada sessão, role um número de d4 igual ao atributo de conjuração de sua subclasse — eles são seus Dados de Oração. Você pode gastar qualquer número deles para auxiliar a si mesmo ou um aliado até alcance distante: use o valor para reduzir dano sofrido, somar a uma rolagem após ela ser feita, ou receber Esperança igual ao resultado. No fim de cada sessão, Dados de Oração não utilizados são perdidos.'}]}
+};
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let chars = JSON.parse(localStorage.getItem('dh_chars')||'[]');
+let editId = null;
+let selectedCls = null;
+let selectedMultiCls = null;
+let selectedMultiDom = null;
+
+function save(){localStorage.setItem('dh_chars',JSON.stringify(chars))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function getChar(id){return chars.find(c=>c.id===id)}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('btn-back').style.display = name==='list'?'none':'';
+  document.getElementById('hdr-sub').textContent = name==='list'?'Fichas de Personagem':name==='form'?(editId?'Editar Personagem':'Novo Personagem'):'Sessão';
+}
+function goHome(){showScreen('list');renderList()}
+function showForm(id){
+  editId=id||null;selectedCls=null;
+  buildClassGrid();buildExpRows();buildInvRows();
+  if(editId){
+    const c=getChar(editId);
+    selectCls(c.cls,true);
+    document.getElementById('f-nome').value=c.nome||'';
+    document.getElementById('f-heranca').value=c.heranca||'';
+    document.getElementById('f-genero').value=c.genero||'';
+    document.getElementById('f-subclasse').value=c.subclasse||'';
+    document.getElementById('f-nivel').value=c.nivel||1;
+    document.getElementById('f-prof').value=c.prof||1;
+    document.getElementById('f-agi').value=c.agi||0;
+    document.getElementById('f-for').value=c.for||0;
+    document.getElementById('f-acu').value=c.acu||0;
+    document.getElementById('f-ins').value=c.ins||0;
+    document.getElementById('f-pre').value=c.pre||0;
+    document.getElementById('f-con').value=c.con||0;
+['agi','for','acu','ins','pre','con'].forEach(a=>{
+      const v=c[a+'Up']||false;
+      document.getElementById('f-'+a+'-up').checked=v;
+      document.getElementById('f-'+a+'-up-lbl').textContent=v?'Sim':'—';
+    });
+    document.getElementById('f-ev-bonus').value=c.evBonus||0;
+    document.getElementById('f-pv-max').value=c.pvMax||6;
+    document.getElementById('f-pf-max').value=c.pfMax||6;
+    document.getElementById('f-dm').value=c.dm||0;
+    document.getElementById('f-dG').value=c.dG||0;
+    document.getElementById('f-wp-nome').value=c.wpNome||'';
+    document.getElementById('f-wp-attr').value=c.wpAttr||'';
+    document.getElementById('f-wp-dados').value=c.wpDados||'';
+    document.getElementById('f-wp-hab').value=c.wpHab||'';
+    document.getElementById('f-wp-maos').value=c.wpMaos||'uma';
+    document.getElementById('f-ws-nome').value=c.wsNome||'';
+    document.getElementById('f-ws-attr').value=c.wsAttr||'';
+    document.getElementById('f-ws-dados').value=c.wsDados||'';
+    document.getElementById('f-ws-hab').value=c.wsHab||'';
+    document.getElementById('f-ws-maos').value=c.wsMaos||'uma';
+    document.getElementById('f-arm-nome').value=c.armNome||'';
+    document.getElementById('f-arm-lim').value=c.armLim||'';
+    document.getElementById('f-arm-base').value=c.armBase||3;
+    document.getElementById('f-arm-hab').value=c.armHab||'';
+    document.getElementById('f-g-p').value=c.gP||0;
+    document.getElementById('f-g-b').value=c.gB||0;
+    document.getElementById('f-g-bau').value=c.gBau||0;
+    document.getElementById('f-notas').value=c.notas||'';
+    document.getElementById('f-wi1-nome').value=c.wi1Nome||'';
+    document.getElementById('f-wi1-attr').value=c.wi1Attr||'';
+    document.getElementById('f-wi1-dados').value=c.wi1Dados||'';
+    document.getElementById('f-wi1-hab').value=c.wi1Hab||'';
+    document.getElementById('f-wi1-tipo').value=c.wi1Tipo||'';
+    document.getElementById('f-wi1-maos').value=c.wi1Maos||'uma';
+    document.getElementById('f-wi2-nome').value=c.wi2Nome||'';
+    document.getElementById('f-wi2-attr').value=c.wi2Attr||'';
+    document.getElementById('f-wi2-dados').value=c.wi2Dados||'';
+    document.getElementById('f-wi2-hab').value=c.wi2Hab||'';
+    document.getElementById('f-wi2-tipo').value=c.wi2Tipo||'';
+    document.getElementById('f-wi2-maos').value=c.wi2Maos||'uma';
+    // multiclass
+    const multiEnabled=c.multiEnabled||false;
+    document.getElementById('f-multi-enabled').checked=multiEnabled;
+    if(multiEnabled){
+      selectedMultiCls=c.multiCls||null;
+      selectedMultiDom=c.multiDom||null;
+      document.getElementById('multi-section').style.display='';
+      buildMultiClsGrid();
+    } else {
+      selectedMultiCls=null;selectedMultiDom=null;
+      document.getElementById('multi-section').style.display='none';
+    }
+    // exps — expand rows if saved data has more than 5
+    const savedExps=c.exps||[];
+    if(savedExps.length>5){expCount=savedExps.length;renderExpRows();}
+    savedExps.forEach((e,i)=>{
+      const ni=document.getElementById('exp-nome-'+i);
+      const vi=document.getElementById('exp-val-'+i);
+      if(ni)ni.value=e.nome||'';
+      if(vi)vi.value=e.val||0;
+    });
+    // inv
+    rebuildInvRows(c.inv||[]);
+    // evolution
+    renderEvoSection(c.evo||null, c.nivel||1);
+  } else {
+    clearForm();
+    selectedMultiCls=null;selectedMultiDom=null;
+    document.getElementById('f-multi-enabled').checked=false;
+    document.getElementById('multi-section').style.display='none';
+    renderEvoSection(null, 1);
+  }
+  showScreen('form');
+  window.scrollTo(0,0);
+}
+
+function clearForm(){
+  document.querySelectorAll('#screen-form input,#screen-form textarea,#screen-form select').forEach(el=>{
+    if(el.type==='number')el.value=el.id==='f-pv-max'||el.id==='f-pf-max'?6:el.id==='f-arm-base'?3:el.id==='f-nivel'||el.id==='f-prof'?1:0;
+    else if(el.tagName==='SELECT')el.selectedIndex=0;
+    else el.value='';
+  });
+}
+
+function showSession(id){
+  const c=getChar(id);
+  if(!c)return;
+  renderSession(c);
+  showScreen('session');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLASS GRID
+// ══════════════════════════════════════════════════════════
+function buildClassGrid(){
+  const g=document.getElementById('cls-grid');
+  g.innerHTML=Object.entries(CLS).map(([k,v])=>
+    `<div class="cls-opt" id="cls-${k}" onclick="selectCls('${k}')" >
+      <div class="cls-opt-name">${v.nome}</div>
+      <div class="cls-opt-sub">${v.sub}</div>
+    </div>`
+  ).join('');
+}
+
+function selectCls(k,quiet){
+  selectedCls=k;
+  document.querySelectorAll('.cls-opt').forEach(el=>el.classList.remove('sel'));
+  const el=document.getElementById('cls-'+k);
+  if(el)el.classList.add('sel');
+  const evBase=document.getElementById('f-ev-base');
+  if(evBase)evBase.value=CLS[k]?CLS[k].ev:'—';
+  if(!quiet){
+    document.getElementById('f-ev-bonus').value=0;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  EXP & INV ROWS
+// ══════════════════════════════════════════════════════════
+let expCount=5;
+function buildExpRows(){expCount=5;renderExpRows();}
+function addExpRow(){expCount++;renderExpRows();const el=document.getElementById('exp-nome-'+(expCount-1));if(el)el.focus();}
+function renderExpRows(){
+  const d=document.getElementById('exp-rows');
+  // preserve existing values before re-render
+  const vals=[];
+  for(let i=0;i<expCount-1;i++){
+    const n=document.getElementById('exp-nome-'+i);
+    const v=document.getElementById('exp-val-'+i);
+    vals.push({nome:n?n.value:'',val:v?v.value:'0'});
+  }
+  d.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:4px">
+    <span style="min-width:24px"></span>
+    <span style="flex:1;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Experiência</span>
+    <span style="width:70px;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);text-align:center">Mod.</span>
+    <span style="width:28px"></span>
+  </div>`;
+  for(let i=0;i<expCount;i++){
+    const extra=i>=5;
+    const row=document.createElement('div');
+    row.className='exp-row';
+    row.innerHTML=`
+      <span class="exp-row-lbl">${i+1}${extra?'<span style="color:var(--hope)">★</span>':''}</span>
+      <input class="exp-row-nome fg input" type="text" id="exp-nome-${i}" placeholder="Nome da experiência…" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 9px;font-size:.88rem;flex:1">
+      <input class="exp-row-val" type="number" id="exp-val-${i}" value="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:7px 9px;font-size:.88rem;width:70px;text-align:center">
+      ${extra?`<button onclick="removeExpRow(${i})" style="background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);border-radius:4px;cursor:pointer;width:28px;height:34px;font-size:.85rem;flex-shrink:0" title="Remover">✕</button>`:'<div style="width:28px;flex-shrink:0"></div>'}`;
+    d.appendChild(row);
+    if(vals[i]){
+      document.getElementById('exp-nome-'+i).value=vals[i].nome;
+      document.getElementById('exp-val-'+i).value=vals[i].val;
+    }
+  }
+}
+function removeExpRow(idx){
+  // collect all values, remove the one at idx, re-render
+  const vals=[];
+  for(let i=0;i<expCount;i++){
+    const n=document.getElementById('exp-nome-'+i);
+    const vv=document.getElementById('exp-val-'+i);
+    vals.push({nome:n?n.value:'',val:vv?vv.value:'0'});
+  }
+  vals.splice(idx,1);
+  expCount--;
+  renderExpRows();
+  vals.forEach((v,i)=>{
+    const n=document.getElementById('exp-nome-'+i);
+    const vv=document.getElementById('exp-val-'+i);
+    if(n)n.value=v.nome;
+    if(vv)vv.value=v.val;
+  });
+}
+
+function toggleMultiSection(){
+  const enabled=document.getElementById('f-multi-enabled').checked;
+  document.getElementById('multi-section').style.display=enabled?'':'none';
+  if(enabled)buildMultiClsGrid();
+}
+function buildMultiClsGrid(){
+  const grid=document.getElementById('multi-cls-grid');
+  grid.innerHTML=Object.entries(MULTI).map(([k,m])=>{
+    const isSelf=k===selectedCls;
+    return `<div id="mcls-${k}" class="multi-cls-opt${selectedMultiCls===k?' sel':''}${isSelf?' disabled':''}" onclick="selectMultiCls('${k}')">${m.nome}</div>`;
+  }).join('');
+  document.getElementById('multi-dom-section').style.display=selectedMultiCls?'':'none';
+  if(selectedMultiCls)renderMultiDom();
+}
+function selectMultiCls(k){
+  if(k===selectedCls)return;
+  selectedMultiCls=k;
+  selectedMultiDom=null;
+  document.querySelectorAll('.multi-cls-opt').forEach(el=>el.classList.remove('sel'));
+  const el=document.getElementById('mcls-'+k);
+  if(el)el.classList.add('sel');
+  document.getElementById('multi-dom-section').style.display='';
+  renderMultiDom();
+}
+function renderMultiDom(){
+  const m=MULTI[selectedMultiCls];if(!m)return;
+  const clsDoms=selectedCls&&MULTI[selectedCls]?MULTI[selectedCls].doms:[];
+  const row=document.getElementById('multi-dom-row');
+  row.innerHTML=m.doms.map((d,i)=>{
+    const blocked=clsDoms.includes(d);
+    if(blocked&&selectedMultiDom===d)selectedMultiDom=null;
+    return `<div class="dom-opt${selectedMultiDom===d?' sel':''}${blocked?' disabled':''}"
+      ${blocked?'title="Domínio já pertence à sua classe principal"':'onclick="selectMultiDom(\''+d.replace(/'/g,"\\'")+'\')"'}>
+      <div>${esc(d)}</div>
+      <div style="font-size:.65rem;color:var(--text-dim);margin-top:3px">${blocked?'Já na classe principal':'Domínio '+(i+1)}</div>
+    </div>`;
+  }).join('');
+  renderMultiHabs();
+}
+function selectMultiDom(d){
+  selectedMultiDom=d;
+  document.querySelectorAll('.dom-opt').forEach(el=>el.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+  renderMultiHabs();
+}
+function renderMultiHabs(){
+  const m=MULTI[selectedMultiCls];if(!m)return;
+  const preview=document.getElementById('multi-habs-preview');
+  preview.innerHTML=`
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Habilidade de Multiclasse — ${esc(m.nome)}</div>
+      ${m.habs.map(h=>`<div class="ca"><div class="ca-name">${esc(h.n)}</div><div class="ca-desc">${esc(h.d)}</div></div>`).join('')}
+    </div>`;
+}
+
+// ── EVOLUTION SYSTEM ──
+const EVO_OPTS = {
+  p2: [
+    {id:'atrib',label:'Marcar 2 atributos diferentes +1 (não marcados anteriormente)',checks:3},
+    {id:'pv',   label:'Aumentar PV máximo permanentemente em +1',checks:2},
+    {id:'pf',   label:'Aumentar PF máximo permanentemente em +1',checks:2},
+    {id:'exp',  label:'Aumentar +1 em duas Experiências existentes',checks:1},
+    {id:'dom',  label:'Pegar nova carta de domínio (máx. nível 4)',checks:1},
+    {id:'eva',  label:'Aumentar Evasão permanentemente em +1',checks:1},
+  ],
+  p3: [
+    {id:'atrib',label:'Marcar 2 atributos diferentes +1 (não marcados anteriormente)',checks:3},
+    {id:'pv',   label:'Aumentar PV máximo permanentemente em +1',checks:2},
+    {id:'pf',   label:'Aumentar PF máximo permanentemente em +1',checks:2},
+    {id:'exp',  label:'Aumentar +1 em duas Experiências existentes',checks:1},
+    {id:'dom',  label:'Pegar nova carta de domínio',checks:1},
+    {id:'eva',  label:'Aumentar Evasão permanentemente em +1',checks:1},
+    {id:'sub',  label:'Melhorar carta de subclasse',checks:1},
+    {id:'prof', label:'Aumentar Proficiência em +1. (Custo: 2 marcações simultâneas)',checks:2},
+    {id:'multi',label:'Multiclasse (escolha classe adicional — exclui "Melhorar subclasse" e outra opção de multiclasse). (Custo: 2 marcações simultâneas)',checks:2},
+  ],
+  p4: [
+    {id:'atrib',label:'Marcar 2 atributos diferentes +1 (não marcados anteriormente)',checks:3},
+    {id:'pv',   label:'Aumentar PV máximo permanentemente em +1',checks:2},
+    {id:'pf',   label:'Aumentar PF máximo permanentemente em +1',checks:2},
+    {id:'exp',  label:'Aumentar +1 em duas Experiências existentes',checks:1},
+    {id:'dom',  label:'Pegar nova carta de domínio',checks:1},
+    {id:'eva',  label:'Aumentar Evasão permanentemente em +1',checks:1},
+    {id:'sub',  label:'Melhorar carta de subclasse',checks:1},
+    {id:'prof', label:'Aumentar Proficiência em +1. (Custo: 2 marcações simultâneas)',checks:2},
+    {id:'multi',label:'Multiclasse (escolha classe adicional — exclui "Melhorar subclasse" e outra opção de multiclasse). (Custo: 2 marcações simultâneas)',checks:2},
+  ]
+};
+
+function renderEvoSection(evo, nivel){
+  const container = document.getElementById('evo-section');
+  if(!container) return;
+  const tiers = [
+    {key:'p2', label:'2º Patamar', range:'Níveis 2–4', cls:'p2',
+     note:'Ao subir para o nível 2: crie uma nova Experiência +2 e aumente sua Proficiência em +1.',
+     inst:'Escolha 2 opções abaixo (você pode escolher a mesma opção duas vezes):',
+     footer:'Atualize seu nível, ajuste os limiares de dano e pegue uma nova carta de domínio.'},
+    {key:'p3', label:'3º Patamar', range:'Níveis 5–7', cls:'p3',
+     note:'Ao subir para o nível 5: crie uma nova Experiência +2, remova todas as marcações de atributos e aumente sua Proficiência em +1.',
+     inst:'Escolha 2 opções abaixo (ou qualquer opção de patamares anteriores):',
+     footer:'Atualize seu nível, ajuste os limiares de dano e pegue uma nova carta de domínio.'},
+    {key:'p4', label:'4º Patamar', range:'Níveis 8–10', cls:'p4',
+     note:'Ao subir para o nível 8: crie uma nova Experiência +2, remova todas as marcações de atributos e aumente sua Proficiência em +1.',
+     inst:'Escolha 2 opções abaixo (ou qualquer opção de patamares anteriores):',
+     footer:'Atualize seu nível, ajuste os limiares de dano e pegue uma nova carta de domínio.'},
+  ];
+  const tierRanges = {p2:[2,4], p3:[5,7], p4:[8,10]};
+  const n = parseInt(nivel)||1;
+
+  container.innerHTML = tiers.map(tier=>{
+    const [lo,hi]=tierRanges[tier.key];
+    const isActive = n>=lo && n<=hi;
+    const opts = EVO_OPTS[tier.key];
+    const saved = (evo&&evo[tier.key]) || {};
+
+    const optsHtml = opts.map((opt,oi)=>{
+      if(opt.checks>1){
+        const boxes=[];
+        for(let s=0;s<opt.checks;s++){
+          const sv=!!(saved[opt.id+'_'+s]);
+          boxes.push(`<label class="evo-chk-lbl"><input type="checkbox" id="evo-${tier.key}-${oi}-${s}" ${sv?'checked':''}> ✓</label>`);
+        }
+        return `<div class="evo-opt">
+          <div class="evo-chk-group">${boxes.join('')}</div>
+          <div class="evo-opt-txt">${esc(opt.label)}</div>
+        </div>`;
+      } else {
+        const v=!!(saved[opt.id]);
+        return `<div class="evo-opt">
+          <div class="evo-chk-group">
+            <label class="evo-chk-lbl"><input type="checkbox" id="evo-${tier.key}-${oi}" ${v?'checked':''}> ✓</label>
+          </div>
+          <div class="evo-opt-txt">${esc(opt.label)}</div>
+        </div>`;
+      }
+    }).join('');
+
+    return `<div class="evo-tier ${tier.cls}${isActive?' active':''}">
+      <div class="evo-tier-hdr">${esc(tier.label)} — ${esc(tier.range)}${isActive?' ★ Patamar Atual':''}</div>
+      <div class="evo-tier-note">📋 ${esc(tier.note)}</div>
+      <div class="evo-tier-inst">${esc(tier.inst)}</div>
+      ${optsHtml}
+      <div class="evo-tier-footer">🎯 ${esc(tier.footer)}</div>
+    </div>`;
+  }).join('');
+}
+
+function evoCheck(tier, key, val){
+  if(!window._evoTemp) window._evoTemp={};
+  if(!window._evoTemp[tier]) window._evoTemp[tier]={};
+  window._evoTemp[tier][key]=val;
+}
+
+// evo-section sync via event delegation (set up after renderEvoSection)
+
+function getEvoFromForm(existingEvo){
+  const evo = existingEvo ? JSON.parse(JSON.stringify(existingEvo)) : {p2:{},p3:{},p4:{}};
+  if(!evo.p2) evo.p2={};
+  if(!evo.p3) evo.p3={};
+  if(!evo.p4) evo.p4={};
+  const tiers=['p2','p3','p4'];
+  tiers.forEach(tier=>{
+    const opts=EVO_OPTS[tier];
+    opts.forEach((opt,oi)=>{
+      if(opt.checks>1){
+        for(let s=0;s<opt.checks;s++){
+          const el=document.getElementById('evo-'+tier+'-'+oi+'-'+s);
+          if(el) evo[tier][opt.id+'_'+s]=el.checked;
+        }
+      } else {
+        const el=document.getElementById(`evo-${tier}-${oi}`);
+        if(el) evo[tier][opt.id]=el.checked;
+      }
+    });
+  });
+  return evo;
+}
+
+let invItems=[];
+function buildInvRows(){invItems=[];renderInvRows()}
+function rebuildInvRows(items){
+  invItems=items.map(x=>typeof x==='object'?{nome:x.nome||'',qtd:x.qtd||1,desc:x.desc||''}:{nome:x,qtd:1,desc:''});
+  renderInvRows();
+}
+function renderInvRows(){
+  const d=document.getElementById('inv-rows');
+  if(!invItems.length){d.innerHTML='<p style="font-size:.8rem;color:var(--text-dim)">Nenhum item. Clique em "+ Item" para adicionar.</p>';return}
+  d.innerHTML=invItems.map((it,i)=>`
+    <div class="inv-card">
+      <div class="inv-card-row">
+        <div class="fg"><label>Nome</label><input type="text" value="${esc(it.nome)}" oninput="invItems[${i}].nome=this.value" placeholder="Nome do item…"></div>
+        <div class="fg"><label>Quantidade</label><input type="number" value="${it.qtd||1}" min="1" oninput="invItems[${i}].qtd=parseInt(this.value)||1" style="text-align:center"></div>
+        <button class="del-btn" onclick="removeInv(${i})" title="Remover">✕</button>
+      </div>
+      <div class="fg"><label>Descrição</label><input type="text" value="${esc(it.desc||'')}" oninput="invItems[${i}].desc=this.value" placeholder="Notas, efeitos, detalhes…"></div>
+    </div>`).join('');
+}
+function addInvRow(){invItems.push({nome:'',qtd:1,desc:''});renderInvRows()}
+function removeInv(i){invItems.splice(i,1);renderInvRows()}
+
+// ══════════════════════════════════════════════════════════
+//  SAVE / LOAD CHAR
+// ══════════════════════════════════════════════════════════
+function saveChar(){
+  if(!selectedCls){showNotif('Selecione uma classe!');return}
+  const n=v('f-nome').trim();
+  if(!n){showNotif('Informe o nome do personagem!');return}
+  const exps=[];
+  for(let i=0;i<expCount;i++){
+    const en=v('exp-nome-'+i).trim();
+    if(en)exps.push({nome:en,val:parseInt(v('exp-val-'+i))||0});
+  }
+  const inv=invItems.filter(x=>x.nome&&x.nome.trim());
+  const cls=CLS[selectedCls];
+  const pvMax=parseInt(v('f-pv-max'))||6;
+  const pfMax=parseInt(v('f-pf-max'))||6;
+  const armBase=parseInt(v('f-arm-base'))||0;
+  const c={
+    id:editId||uid(),cls:selectedCls,
+    nome:n,heranca:v('f-heranca'),genero:v('f-genero'),subclasse:v('f-subclasse'),
+    nivel:parseInt(v('f-nivel'))||1,prof:parseInt(v('f-prof'))||1,
+    agi:parseInt(v('f-agi'))||0,for:parseInt(v('f-for'))||0,acu:parseInt(v('f-acu'))||0,
+    ins:parseInt(v('f-ins'))||0,pre:parseInt(v('f-pre'))||0,con:parseInt(v('f-con'))||0,
+    agiUp:!!document.getElementById('f-agi-up').checked,forUp:!!document.getElementById('f-for-up').checked,
+    acuUp:!!document.getElementById('f-acu-up').checked,insUp:!!document.getElementById('f-ins-up').checked,
+    preUp:!!document.getElementById('f-pre-up').checked,conUp:!!document.getElementById('f-con-up').checked,
+    evBonus:parseInt(v('f-ev-bonus'))||0,
+    pvMax,pfMax,armBase,
+    dm:parseInt(v('f-dm'))||0,dG:parseInt(v('f-dG'))||0,
+    wpNome:v('f-wp-nome'),wpAttr:v('f-wp-attr'),wpDados:v('f-wp-dados'),wpHab:v('f-wp-hab'),wpMaos:v('f-wp-maos'),
+    wsNome:v('f-ws-nome'),wsAttr:v('f-ws-attr'),wsDados:v('f-ws-dados'),wsHab:v('f-ws-hab'),wsMaos:v('f-ws-maos'),
+    armNome:v('f-arm-nome'),armLim:v('f-arm-lim'),armHab:v('f-arm-hab'),
+    gP:parseInt(v('f-g-p'))||0,gB:parseInt(v('f-g-b'))||0,gBau:parseInt(v('f-g-bau'))||0,
+    wi1Nome:v('f-wi1-nome'),wi1Attr:v('f-wi1-attr'),wi1Dados:v('f-wi1-dados'),wi1Hab:v('f-wi1-hab'),wi1Tipo:v('f-wi1-tipo'),wi1Maos:v('f-wi1-maos'),
+    wi2Nome:v('f-wi2-nome'),wi2Attr:v('f-wi2-attr'),wi2Dados:v('f-wi2-dados'),wi2Hab:v('f-wi2-hab'),wi2Tipo:v('f-wi2-tipo'),wi2Maos:v('f-wi2-maos'),
+    notas:v('f-notas'),exps,inv,
+    multiEnabled:document.getElementById('f-multi-enabled').checked,
+    multiCls:selectedMultiCls,
+    multiDom:selectedMultiDom,
+    evo:getEvoFromForm(editId?getChar(editId).evo:null),
+    // session state
+    pvAtual:editId?getChar(editId).pvAtual??pvMax:pvMax,
+    pfAtual:editId?getChar(editId).pfAtual??pfMax:pfMax,
+    esperanca:editId?getChar(editId).esperanca??6:6,
+    paAtual:editId?getChar(editId).paAtual??armBase:armBase,
+  };
+  if(editId){const i=chars.findIndex(x=>x.id===editId);chars[i]=c}
+  else chars.push(c);
+  save();showNotif('Personagem salvo!');goHome();
+}
+
+function deleteChar(id){
+  chars=chars.filter(c=>c.id!==id);save();renderList();
+}
+
+// ══════════════════════════════════════════════════════════
+//  LIST RENDER
+// ══════════════════════════════════════════════════════════
+function renderList(){
+  const g=document.getElementById('char-grid');
+  const es=document.getElementById('empty-state');
+  document.getElementById('char-count-lbl').textContent=`${chars.length} personagem${chars.length!==1?'s':''}`;
+  if(!chars.length){g.innerHTML='';es.style.display='';return}
+  es.style.display='none';
+  g.innerHTML=chars.map(c=>{
+    const cls=CLS[c.cls]||{};
+    return `<div class="char-card" onclick="showSession('${c.id}')">
+      <div class="cc-cls">${cls.nome||c.cls} — Nível ${c.nivel}</div>
+      <div class="cc-name">${esc(c.nome)}</div>
+      <div class="cc-sub">${esc(c.heranca)}${c.subclasse?' · '+esc(c.subclasse):''}</div>
+      <div class="cc-stats">
+        <span><strong>${c.pvAtual??c.pvMax}/${c.pvMax}</strong> PV</span>
+        <span><strong>${c.pfAtual??c.pfMax}/${c.pfMax}</strong> PF</span>
+        <span><strong>${c.esperanca??6}/6</strong> ✦</span>
+      </div>
+      <div class="cc-acts" onclick="event.stopPropagation()">
+        <button class="btn btn-primary btn-sm" onclick="showSession('${c.id}')">▶ Ver Ficha</button>
+        <button class="btn btn-ghost btn-sm" onclick="showForm('${c.id}')">✏ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('${c.id}','${esc(c.nome)}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  SESSION RENDER
+// ══════════════════════════════════════════════════════════
+function renderSession(c){
+  const cls=CLS[c.cls]||{nome:c.cls,sub:'',ev:10,ha:'',habs:[]};
+  const ev=cls.ev+(c.evBonus||0);
+  const L=document.getElementById('sess-left');
+  const R=document.getElementById('sess-right');
+
+  // ── LEFT ──
+  L.innerHTML=`
+    <div class="char-hdr">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+          <div class="char-hdr-name">${esc(c.nome)}</div>
+          <div class="char-hdr-meta">
+            <span><strong>${cls.nome}</strong>${c.subclasse?' · '+esc(c.subclasse):''}</span>
+            <span>Nível <strong>${c.nivel}</strong> <span style="color:var(--border)">·</span> <strong>${(()=>{const n=c.nivel||1;if(n<=1)return'1º Patamar';if(n<=4)return'2º Patamar';if(n<=7)return'3º Patamar';return'4º Patamar (máx.)';})()} </strong></span>
+            <span>${esc(c.heranca)||''}${c.genero?' · '+esc(c.genero):''}</span>
+            ${c.multiEnabled&&c.multiCls&&MULTI[c.multiCls]?`<span style="color:var(--hope)">✦ Multiclasse: <strong style="color:var(--hope)">${esc(MULTI[c.multiCls].nome)}</strong>${c.multiDom?' · '+esc(c.multiDom):''}</span>`:''}
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="showForm('${c.id}')">✏ Editar</button>
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Saúde & Dano</div>
+      <div class="ss-body">
+        <p style="font-size:.65rem;color:var(--text-dim);text-align:center;margin-bottom:8px">Some seu nível atual aos seus limiares de dano.</p>
+        <div class="dmg-flow">
+          <div class="dmg-type dm">
+            <div class="dmg-type-lbl">Dano Menor</div>
+            <div class="dmg-type-sub">Marque 1 PV</div>
+          </div>
+          <div class="dmg-sep">
+            <div class="dmg-sep-val">${c.dm||'—'}</div>
+            <div class="dmg-sep-arr">▶</div>
+          </div>
+          <div class="dmg-type dM">
+            <div class="dmg-type-lbl">Dano Maior</div>
+            <div class="dmg-type-sub">Marque 2 PV</div>
+          </div>
+          <div class="dmg-sep">
+            <div class="dmg-sep-val">${c.dG||'—'}</div>
+            <div class="dmg-sep-arr">▶</div>
+          </div>
+          <div class="dmg-type dG">
+            <div class="dmg-type-lbl">Dano Grave</div>
+            <div class="dmg-type-sub">Marque 3 PV</div>
+          </div>
+        </div>
+        <div class="track-lbl"><span>Pontos de Vida</span><span id="pv-count">${c.pvAtual??c.pvMax}/${c.pvMax}</span></div>
+        <div class="boxes" id="pv-boxes">${renderBoxes(c.pvMax,c.pvMax-(c.pvAtual??c.pvMax),'hp','togglePV',c.id)}</div>
+        <div class="temp-row"><span>PV Temporário</span><input class="temp-in" type="number" value="${c.pvTemp||0}" min="0" onchange="updateTemp('${c.id}','pvTemp',this.value)"></div>
+        <div class="track-lbl" style="margin-top:10px"><span>Pontos de Fadiga</span><span id="pf-count">${c.pfAtual??c.pfMax}/${c.pfMax}</span></div>
+        <div class="boxes" id="pf-boxes">${renderBoxes(c.pfMax,c.pfMax-(c.pfAtual??c.pfMax),'fp','togglePF',c.id)}</div>
+        <div class="temp-row"><span>PF Temporário</span><input class="temp-in" type="number" value="${c.pfTemp||0}" min="0" onchange="updateTemp('${c.id}','pfTemp',this.value)"></div>
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Esperança</div>
+      <div class="ss-body">
+        <div class="gems" id="hope-gems">${renderGems(c.esperanca??6,c.id)}</div>
+        <div class="temp-row"><span>Esperança Temporária</span><input class="temp-in" type="number" value="${c.hopeTemp||0}" min="0" onchange="updateTemp('${c.id}','hopeTemp',this.value)"></div>
+        <div class="hope-ab" style="margin-top:8px">${esc(cls.ha)}</div>
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Atributos</div>
+      <div class="ss-body">
+        <div class="attr-disp">
+          ${attrBox('Agilidade',c.agi,c.agiUp)}${attrBox('Força',c.for,c.forUp)}${attrBox('Acuidade',c.acu,c.acuUp)}
+          ${attrBox('Instinto',c.ins,c.insUp)}${attrBox('Presença',c.pre,c.preUp)}${attrBox('Conhecimento',c.con,c.conUp)}
+        </div>
+      </div>
+    </div>
+
+    ${c.exps&&c.exps.length?`<div class="ss">
+      <div class="ss-hdr">Experiências</div>
+      <div class="ss-body">
+        ${c.exps.map(e=>`<div class="exp-dr"><span>${esc(e.nome)}</span><span class="exp-mod">${e.val>=0?'+':''}${e.val}</span></div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <div class="ss">
+      <div class="ss-hdr">Ouro</div>
+      <div class="ss-body">
+        <div class="gold-row">
+          <div class="gold-box"><div class="gold-lbl">Punhados</div><input class="gold-in" type="number" value="${c.gP||0}" onchange="updateGold('${c.id}','gP',this.value)"></div>
+          <div class="gold-box"><div class="gold-lbl">Bolsas</div><input class="gold-in" type="number" value="${c.gB||0}" onchange="updateGold('${c.id}','gB',this.value)"></div>
+          <div class="gold-box"><div class="gold-lbl">Baú</div><input class="gold-in" type="number" value="${c.gBau||0}" onchange="updateGold('${c.id}','gBau',this.value)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descanso oculto temporariamente -->
+  `;
+
+  // ── RIGHT ──
+  const profFilled=Math.min(c.prof||1,6);
+  const profBoxes=Array.from({length:6},(_,i)=>`<div class="pbox${i<profFilled?' on':''}" title="Proficiência"></div>`).join('');
+
+  R.innerHTML=`
+    <div class="ss">
+      <div class="ss-hdr">Evasão & Armadura</div>
+      <div class="ss-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="stat-big"><div class="stat-big-lbl">Evasão</div><div class="stat-big-val ev-val">${ev}</div></div>
+          <div class="stat-big"><div class="stat-big-lbl">Proficiência</div><div class="prof-row" style="justify-content:center;margin-top:6px">${profBoxes}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Armas Ativas</div>
+      <div class="ss-body">
+        ${weaponDisp('Principal',c.wpNome,c.wpAttr,c.wpDados,c.wpHab,c.wpMaos,c.prof)}
+        ${weaponDisp('Secundária',c.wsNome,c.wsAttr,c.wsDados,c.wsHab,c.wsMaos,c.prof)}
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Armadura Ativa</div>
+      <div class="ss-body">
+        ${c.armNome?`<div class="wd">
+          <div class="wd-name">${esc(c.armNome)}</div>
+          <div class="wd-meta">${c.armLim?'Limiares: '+esc(c.armLim):''}</div>
+          ${c.armHab?`<div class="wd-skill">${esc(c.armHab)}</div>`:''}
+        </div>`:'<p style="color:var(--text-dim);font-size:.82rem">Sem armadura equipada.</p>'}
+        ${c.armBase?`
+          <div class="track-lbl"><span>Pontos de Armadura</span><span id="pa-count">${c.paAtual??c.armBase}/${c.armBase}</span></div>
+          <div class="boxes" id="pa-boxes">${renderBoxes(c.armBase,c.armBase-(c.paAtual??c.armBase),'ar','togglePA',c.id)}</div>
+          <div class="temp-row"><span>PA Temporário</span><input class="temp-in" type="number" value="${c.paTemp||0}" min="0" onchange="updateTemp('${c.id}','paTemp',this.value)"></div>`:''}
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Inventário</div>
+      <div class="ss-body">
+        <ul class="inv-disp" id="sess-inv-list">${invListHtml(c)}</ul>
+        ${c.wi1Nome?weaponDisp('Inventário — '+(c.wi1Tipo||''),c.wi1Nome,c.wi1Attr,c.wi1Dados,c.wi1Hab,c.wi1Maos,c.prof):''}
+        ${c.wi2Nome?weaponDisp('Inventário — '+(c.wi2Tipo||''),c.wi2Nome,c.wi2Attr,c.wi2Dados,c.wi2Hab,c.wi2Maos,c.prof):''}
+        <div class="inv-add-form">
+          <div class="frow" style="display:grid;grid-template-columns:1fr 90px;gap:10px">
+            <div class="fg"><label>Nome do item</label><input type="text" id="sess-inv-nome" placeholder="Ex: Poção de Vida…"></div>
+            <div class="fg"><label>Quantidade</label><input type="number" id="sess-inv-qtd" value="1" min="1" style="text-align:center"></div>
+          </div>
+          <div class="fg"><label>Descrição</label><textarea id="sess-inv-desc" placeholder="Notas, efeitos, detalhes…"></textarea></div>
+          <div class="inv-add-actions"><button class="btn btn-primary btn-sm" onclick="sessAddInv('${c.id}')">+ Adicionar Item</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-hdr">Habilidades de Classe — ${cls.nome}</div>
+      <div class="ss-body">
+        ${cls.habs.map(h=>`<div class="ca"><div class="ca-name">${esc(h.n)}</div><div class="ca-desc">${esc(h.d)}</div></div>`).join('')}
+        ${c.notas?`<div class="divider"></div><div style="font-size:.8rem;color:var(--text-dim);white-space:pre-wrap">${esc(c.notas)}</div>`:''}
+      </div>
+    </div>
+
+    ${c.multiEnabled&&c.multiCls&&MULTI[c.multiCls]?`
+    <div class="ss">
+      <div class="ss-hdr">Multiclasse — ${esc(MULTI[c.multiCls].nome)}${c.multiDom?' · '+esc(c.multiDom):''}</div>
+      <div class="ss-body">
+        ${MULTI[c.multiCls].habs.map(h=>`<div class="ca"><div class="ca-name">${esc(h.n)}</div><div class="ca-desc">${esc(h.d)}</div></div>`).join('')}
+      </div>
+    </div>`:''}
+  `;
+}
+
+// ── Helpers ──
+function renderBoxes(max,marked,cls,fn,id){
+  return Array.from({length:max},(_,i)=>
+    `<div class="box ${cls}${i<marked?' on':''}" onclick="${fn}('${id}',${i})"></div>`
+  ).join('');
+}
+function renderGems(hope,id){
+  return Array.from({length:6},(_,i)=>
+    `<div class="gem${i<hope?' on':''}" onclick="toggleHope('${id}',${i})">✦</div>`
+  ).join('');
+}
+function attrBox(label,val,upgraded){
+  const n=parseInt(val)||0;
+  const cl=n>0?'pos':n<0?'neg':'zer';
+  return `<div class="abox${upgraded?' upgraded':''}"><div class="abox-lbl">${label}</div><div class="abox-val ${cl}">${n>=0?'+':''}${n}</div></div>`;
+}
+function weaponDisp(type,nome,attr,dados,hab,maos,prof){
+  if(!nome)return '';
+  const maosLabel=maos==='duas'?'Duas mãos':'Uma mão';
+  const profLabel=prof?` | Prof +${prof}`:'';
+  return `<div class="wd">
+    <div class="wd-type">${esc(type)}</div>
+    <div class="wd-name">${esc(nome)}</div>
+    <div class="wd-meta">${attr?esc(attr):''}${dados?' | '+esc(dados):''} | ${maosLabel}${profLabel}</div>
+    ${hab?`<div class="wd-skill">${esc(hab)}</div>`:''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  INTERACTIVE SESSION ACTIONS
+// ══════════════════════════════════════════════════════════
+function togglePV(id,i){
+  const c=getChar(id);if(!c)return;
+  const marked=c.pvMax-(c.pvAtual??c.pvMax);
+  // clicking a marked box → unmark (restore PV); clicking unmarked → mark (lose PV)
+  const newMarked=i<marked?i:i+1;
+  c.pvAtual=c.pvMax-newMarked;
+  save();refreshSession(c);
+}
+function togglePF(id,i){
+  const c=getChar(id);if(!c)return;
+  const marked=c.pfMax-(c.pfAtual??c.pfMax);
+  const newMarked=i<marked?i:i+1;
+  c.pfAtual=c.pfMax-newMarked;
+  save();refreshSession(c);
+}
+function togglePA(id,i){
+  const c=getChar(id);if(!c)return;
+  const base=c.armBase||0;
+  const marked=base-(c.paAtual??base);
+  const newMarked=i<marked?i:i+1;
+  c.paAtual=base-newMarked;
+  save();refreshSession(c);
+}
+function toggleHope(id,i){
+  const c=getChar(id);if(!c)return;
+  const cur=c.esperanca??6;
+  c.esperanca=i<cur?i:i+1;
+  save();refreshSession(c);
+}
+function invListHtml(c){
+  return (c.inv||[]).map((item,idx)=>{
+    const nome=typeof item==='object'?item.nome:item;
+    const qtd=typeof item==='object'?(item.qtd||1):1;
+    const desc=typeof item==='object'?item.desc:'';
+    return `<li>
+      <div class="inv-item-info" style="flex:1;min-width:0">
+        <div class="inv-item-name">${esc(nome)}</div>
+        ${desc?`<div class="inv-item-desc">${esc(desc)}</div>`:''}
+      </div>
+      <input type="number" min="0" value="${qtd}" title="Quantidade"
+        style="width:52px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:4px 6px;font-size:.82rem;text-align:center;flex-shrink:0"
+        onchange="sessUpdateInvQtd('${c.id}',${idx},this.value)">
+      <button class="inv-del-btn" onclick="sessRemoveInv('${c.id}',${idx})" title="Remover">✕</button>
+    </li>`;
+  }).join('');
+}
+function sessAddInv(id){
+  const c=getChar(id);if(!c)return;
+  const nomeEl=document.getElementById('sess-inv-nome');
+  const nome=(nomeEl?nomeEl.value:'').trim();
+  if(!nome){showNotif('Informe o nome do item!');if(nomeEl)nomeEl.focus();return;}
+  const qtd=parseInt((document.getElementById('sess-inv-qtd')||{}).value)||1;
+  const desc=((document.getElementById('sess-inv-desc')||{}).value||'').trim();
+  if(!c.inv)c.inv=[];
+  c.inv.push({nome,qtd,desc});
+  if(nomeEl)nomeEl.value='';
+  const qtdEl=document.getElementById('sess-inv-qtd');if(qtdEl)qtdEl.value='1';
+  const descEl=document.getElementById('sess-inv-desc');if(descEl)descEl.value='';
+  save();refreshInvList(c);showNotif('Item adicionado!');
+}
+function sessUpdateInvQtd(id,idx,val){
+  const c=getChar(id);if(!c||!c.inv[idx])return;
+  c.inv[idx].qtd=Math.max(0,parseInt(val)||0);
+  save();
+}
+function sessRemoveInv(id,idx){
+  const c=getChar(id);if(!c)return;
+  c.inv.splice(idx,1);
+  save();refreshInvList(c);
+}
+function refreshInvList(c){
+  const list=document.getElementById('sess-inv-list');
+  if(list)list.innerHTML=invListHtml(c);
+}
+function updateGold(id,field,val){
+  const c=getChar(id);if(!c)return;
+  c[field]=parseInt(val)||0;save();
+}
+function updateTemp(id,field,val){
+  const c=getChar(id);if(!c)return;
+  c[field]=Math.max(0,parseInt(val)||0);save();
+}
+function shortRest(id){
+  const c=getChar(id);if(!c)return;
+  c.pfAtual=Math.min((c.pfAtual??c.pfMax)+1,c.pfMax);
+  save();refreshSession(c);showNotif('Descanso curto: recuperou 1 PF');
+}
+function longRest(id){
+  const c=getChar(id);if(!c)return;
+  c.pvAtual=c.pvMax;c.pfAtual=c.pfMax;c.paAtual=c.armBase||0;
+  save();refreshSession(c);showNotif('Descanso longo: tudo recuperado!');
+}
+
+function refreshSession(c){
+  // partial update
+  const pvBoxes=document.getElementById('pv-boxes');
+  const pfBoxes=document.getElementById('pf-boxes');
+  const paBoxes=document.getElementById('pa-boxes');
+  const pvCount=document.getElementById('pv-count');
+  const pfCount=document.getElementById('pf-count');
+  const paCount=document.getElementById('pa-count');
+  const hopeGems=document.getElementById('hope-gems');
+  if(pvBoxes)pvBoxes.innerHTML=renderBoxes(c.pvMax,c.pvMax-(c.pvAtual??c.pvMax),'hp','togglePV',c.id);
+  if(pfBoxes)pfBoxes.innerHTML=renderBoxes(c.pfMax,c.pfMax-(c.pfAtual??c.pfMax),'fp','togglePF',c.id);
+  if(paBoxes)paBoxes.innerHTML=renderBoxes(c.armBase||0,(c.armBase||0)-((c.paAtual??c.armBase)||0),'ar','togglePA',c.id);
+  if(pvCount)pvCount.textContent=`${c.pvAtual??c.pvMax}/${c.pvMax}`;
+  if(pfCount)pfCount.textContent=`${c.pfAtual??c.pfMax}/${c.pfMax}`;
+  if(paCount)paCount.textContent=`${(c.paAtual??c.armBase)||0}/${c.armBase||0}`;
+  if(hopeGems)hopeGems.innerHTML=renderGems(c.esperanca??6,c.id);
+  // update card list in background
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL & UTILS
+// ══════════════════════════════════════════════════════════
+function confirmDelete(id,nome){
+  document.getElementById('modal-title').textContent='Excluir personagem?';
+  document.getElementById('modal-msg').textContent=`"${nome}" será removido permanentemente.`;
+  document.getElementById('modal-ok').onclick=()=>{deleteChar(id);closeModal()};
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none'}
+
+function showNotif(msg){
+  const n=document.createElement('div');n.className='notif';n.textContent=msg;
+  document.body.appendChild(n);setTimeout(()=>n.remove(),2600);
+}
+
+function v(id){return (document.getElementById(id)||{}).value||''}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+['agi','for','acu','ins','pre','con'].forEach(a=>{
+  const el=document.getElementById('f-'+a+'-up');
+  if(el)el.addEventListener('change',()=>{
+    document.getElementById('f-'+a+'-up-lbl').textContent=el.checked?'Sim':'—';
+  });
+});
+function toggleFsec(el){
+  const sec=el.closest('.fsec');if(!sec)return;
+  sec.classList.toggle('collapsed');
+}
+renderList();
+</script>
+</body></html>
