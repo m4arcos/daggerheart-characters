@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCharStore } from '../store/useCharStore';
+import NumInput from '../components/NumInput';
 import { Character, InvEntry, tierFromLevel } from '../types/character';
 import { CLS } from '../constants/cls';
 import { MULTI } from '../constants/multi';
@@ -184,9 +185,9 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                   return (
                     <div key={field} className="gold-box">
                       <div className="gold-lbl">{labels[i]}</div>
-                      <input
-                        className="gold-in" type="number" inputMode="numeric" min={0} step={1} value={c[field] || 0}
-                        onChange={e => patch({ [field]: parseInt(e.target.value) || 0 })}
+                      <NumInput
+                        className="gold-in" inputMode="numeric" min={0} step={1} value={c[field] || 0}
+                        onChange={v => patch({ [field]: v })}
                       />
                     </div>
                   );
@@ -270,10 +271,10 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                         </div>
                         {item.desc && <div className="inv-item-desc">{item.desc}</div>}
                       </div>
-                      <input
-                        type="number" inputMode="numeric" min={0} step={1} value={item.qtd}
+                      <NumInput
+                        inputMode="numeric" min={0} step={1} value={item.qtd}
                         style={{ width: 52, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', padding: '4px 6px', fontSize: '.82rem', textAlign: 'center', flexShrink: 0 }}
-                        onChange={e => updateInvQtd(idx, parseInt(e.target.value) || 0)}
+                        onChange={v => updateInvQtd(idx, v)}
                       />
                       <button className="inv-del-btn" onClick={() => removeInv(idx)}>✕</button>
                     </li>
@@ -289,7 +290,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                     <input type="text" value={newInvNome} placeholder="Ex: Poção de Vida…" onChange={e => setNewInvNome(e.target.value)} />
                   </div>
                   <div className="fg"><label>Quantidade</label>
-                    <input type="number" inputMode="numeric" min={1} step={1} value={newInvQtd} style={{ textAlign: 'center' }} onChange={e => setNewInvQtd(parseInt(e.target.value) || 1)} />
+                    <NumInput inputMode="numeric" min={1} step={1} fallback={1} value={newInvQtd} style={{ textAlign: 'center' }} onChange={v => setNewInvQtd(v)} />
                   </div>
                 </div>
                 <div className="fg" style={{ marginBottom: 8 }}><label>Descrição</label>
@@ -370,9 +371,9 @@ function TempRow({ label, value, onChange }: { label: string; value: number; onC
   return (
     <div className="temp-row">
       <span>{label}</span>
-      <input
-        className="temp-in" type="number" inputMode="numeric" min={0} step={1} value={value}
-        onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+      <NumInput
+        className="temp-in" inputMode="numeric" min={0} step={1} value={value}
+        onChange={onChange}
       />
     </div>
   );

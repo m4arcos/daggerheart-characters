@@ -5,6 +5,7 @@ import { CLS } from '../constants/cls';
 import { MULTI } from '../constants/multi';
 import { EVO_TIERS, TIER_RANGES } from '../constants/evo';
 import CollapsibleSection from '../components/CollapsibleSection';
+import NumInput from '../components/NumInput';
 
 interface Props {
   editId: string | null;
@@ -49,8 +50,6 @@ export default function FormScreen({ editId, onDone }: Props) {
 
   const set = (field: keyof FormState, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
-
-  const num = (v: string, fallback = 0) => parseInt(v) || fallback;
 
   const handleSave = async () => {
     if (!form.cls) { showNotif('Selecione uma classe!'); return; }
@@ -134,12 +133,12 @@ export default function FormScreen({ editId, onDone }: Props) {
             <input type="text" value={form.subclasse} placeholder="Ex: Baluarte…" onChange={e => set('subclasse', e.target.value)} />
           </div>
           <div className="fg"><label>Nível</label>
-            <input type="number" inputMode="numeric" min={1} max={10} step={1} value={form.nivel}
-              onChange={e => set('nivel', num(e.target.value, 1))} />
+            <NumInput inputMode="numeric" min={1} max={10} step={1} fallback={1} value={form.nivel}
+              onChange={v => set('nivel', v)} />
           </div>
           <div className="fg"><label>Proficiência</label>
-            <input type="number" inputMode="numeric" min={1} max={6} step={1} value={form.prof}
-              onChange={e => set('prof', num(e.target.value, 1))} />
+            <NumInput inputMode="numeric" min={1} max={6} step={1} fallback={1} value={form.prof}
+              onChange={v => set('prof', v)} />
           </div>
         </div>
       </CollapsibleSection>
@@ -152,8 +151,8 @@ export default function FormScreen({ editId, onDone }: Props) {
             return (
               <div key={a} className="fg">
                 <label>{labels[a]}</label>
-                <input type="number" className="attr-in" value={form[a]}
-                  onChange={e => set(a, num(e.target.value))} />
+                <NumInput className="attr-in" step={1} value={form[a]}
+                  onChange={v => set(a, v)} />
               </div>
             );
           })}
@@ -179,13 +178,13 @@ export default function FormScreen({ editId, onDone }: Props) {
               style={{ color: 'var(--accent)', fontWeight: 700, textAlign: 'center', cursor: 'default' }} />
           </div>
           <div className="fg"><label>Evasão (bônus)</label>
-            <input type="number" inputMode="numeric" min={0} step={1} value={form.evBonus} onChange={e => set('evBonus', num(e.target.value))} />
+            <NumInput inputMode="numeric" min={0} step={1} value={form.evBonus} onChange={v => set('evBonus', v)} />
           </div>
           <div className="fg"><label>PV Máximo</label>
-            <input type="number" inputMode="numeric" min={1} step={1} value={form.pvMax} onChange={e => set('pvMax', num(e.target.value, 1))} />
+            <NumInput inputMode="numeric" min={1} step={1} fallback={1} value={form.pvMax} onChange={v => set('pvMax', v)} />
           </div>
           <div className="fg"><label>PF Máximo (Fadiga)</label>
-            <input type="number" inputMode="numeric" min={1} step={1} value={form.pfMax} onChange={e => set('pfMax', num(e.target.value, 1))} />
+            <NumInput inputMode="numeric" min={1} step={1} fallback={1} value={form.pfMax} onChange={v => set('pfMax', v)} />
           </div>
         </div>
       </CollapsibleSection>
@@ -197,10 +196,10 @@ export default function FormScreen({ editId, onDone }: Props) {
         </p>
         <div className="frow c2">
           <div className="fg"><label>Limiar Menor</label>
-            <input type="number" inputMode="numeric" min={0} step={1} value={form.dm} placeholder="Ex: 5" onChange={e => set('dm', num(e.target.value))} />
+            <NumInput inputMode="numeric" min={0} step={1} value={form.dm} placeholder="Ex: 5" onChange={v => set('dm', v)} />
           </div>
           <div className="fg"><label>Limiar Grave</label>
-            <input type="number" inputMode="numeric" min={0} step={1} value={form.dG} placeholder="Ex: 11" onChange={e => set('dG', num(e.target.value))} />
+            <NumInput inputMode="numeric" min={0} step={1} value={form.dG} placeholder="Ex: 11" onChange={v => set('dG', v)} />
           </div>
         </div>
       </CollapsibleSection>
@@ -233,7 +232,7 @@ export default function FormScreen({ editId, onDone }: Props) {
             <input type="text" value={form.armLim} placeholder="Ex: 5/11" onChange={e => set('armLim', e.target.value)} />
           </div>
           <div className="fg"><label>Armadura Base (PA máx)</label>
-            <input type="number" inputMode="numeric" min={0} step={1} value={form.armBase} onChange={e => set('armBase', num(e.target.value))} />
+            <NumInput inputMode="numeric" min={0} step={1} value={form.armBase} onChange={v => set('armBase', v)} />
           </div>
         </div>
         <div className="frow">
@@ -263,9 +262,9 @@ export default function FormScreen({ editId, onDone }: Props) {
               onChange={e => updateExp(i, 'nome', e.target.value)}
               style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', padding: '7px 9px', fontSize: '.88rem' }}
             />
-            <input
-              type="number" value={exp.val}
-              onChange={e => updateExp(i, 'val', num(e.target.value))}
+            <NumInput
+              step={1} value={exp.val}
+              onChange={v => updateExp(i, 'val', v)}
               style={{ width: 70, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', padding: '7px 9px', fontSize: '.88rem', textAlign: 'center' }}
             />
             {i >= 5 ? (
@@ -278,9 +277,9 @@ export default function FormScreen({ editId, onDone }: Props) {
       {/* OURO */}
       <CollapsibleSection title="Ouro">
         <div className="frow c3">
-          <div className="fg"><label>Punhados</label><input type="number" inputMode="numeric" min={0} step={1} value={form.gP} onChange={e => set('gP', num(e.target.value))} /></div>
-          <div className="fg"><label>Bolsas</label><input type="number" inputMode="numeric" min={0} step={1} value={form.gB} onChange={e => set('gB', num(e.target.value))} /></div>
-          <div className="fg"><label>Baú</label><input type="number" inputMode="numeric" min={0} step={1} value={form.gBau} onChange={e => set('gBau', num(e.target.value))} /></div>
+          <div className="fg"><label>Punhados</label><NumInput inputMode="numeric" min={0} step={1} value={form.gP} onChange={v => set('gP', v)} /></div>
+          <div className="fg"><label>Bolsas</label><NumInput inputMode="numeric" min={0} step={1} value={form.gB} onChange={v => set('gB', v)} /></div>
+          <div className="fg"><label>Baú</label><NumInput inputMode="numeric" min={0} step={1} value={form.gBau} onChange={v => set('gBau', v)} /></div>
         </div>
       </CollapsibleSection>
 
@@ -297,7 +296,7 @@ export default function FormScreen({ editId, onDone }: Props) {
                   <input type="text" value={item.nome} placeholder="Nome do item…" onChange={e => updateInv(i, 'nome', e.target.value)} />
                 </div>
                 <div className="fg"><label>Quantidade</label>
-                  <input type="number" inputMode="numeric" min={1} step={1} value={item.qtd} onChange={e => updateInv(i, 'qtd', num(e.target.value, 1))} style={{ textAlign: 'center' }} />
+                  <NumInput inputMode="numeric" min={1} step={1} fallback={1} value={item.qtd} onChange={v => updateInv(i, 'qtd', v)} style={{ textAlign: 'center' }} />
                 </div>
                 <button className="del-btn" onClick={() => removeInv(i)}>✕</button>
               </div>
@@ -416,10 +415,13 @@ export default function FormScreen({ editId, onDone }: Props) {
         {EVO_TIERS.map(tier => {
           const [lo, hi] = TIER_RANGES[tier.key];
           const isActive = nivel >= lo && nivel <= hi;
+          const isLocked = nivel < lo;
           return (
-            <div key={tier.key} className={`evo-tier${isActive ? ' active' : ''}`}>
+            <div key={tier.key} className={`evo-tier${isActive ? ' active' : ''}${isLocked ? ' locked' : ''}`}>
               <div className="evo-tier-hdr">
-                {tier.label} — {tier.range}{isActive ? ' ★ Patamar Atual' : ''}
+                {tier.label} — {tier.range}
+                {isActive ? ' ★ Patamar Atual' : ''}
+                {isLocked ? ` — disponível a partir do nível ${lo}` : ''}
               </div>
               <div className="evo-tier-note">📋 {tier.note}</div>
               <div className="evo-tier-inst">{tier.inst}</div>
