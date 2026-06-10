@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { AuthUser } from '../types/auth';
+import { api } from '../api';
 
 const TOKEN_KEY = 'dh_token';
 const USER_KEY = 'dh_user';
@@ -36,31 +37,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   login: async (email, senha) => {
     set({ loginError: null });
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, senha }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      set({ loginError: data.error ?? 'Erro ao fazer login' });
-      return;
+    try {
+      const data = await api.auth.login(email, senha);
+      get().updateAuth(data.token, data.user);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao fazer login';
+      try {
+        set({ loginError: JSON.parse(msg).error ?? msg });
+      } catch {
+        set({ loginError: msg });
+      }
     }
-    get().updateAuth(data.token, data.user);
   },
 
   setPassword: async (novaSenha) => {
-    const { token } = get();
-    const res = await fetch('/api/auth/set-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ novaSenha }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? 'Erro ao definir senha');
+    const data = await api.auth.setPassword(novaSenha);
     get().updateAuth(data.token, data.user);
   },
 

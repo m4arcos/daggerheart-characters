@@ -20,6 +20,21 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  auth: {
+    login: (email: string, senha: string) =>
+      req<{ token: string; user: import('./types/auth').AuthUser }>('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
+      }),
+    setPassword: (novaSenha: string) =>
+      req<{ token: string; user: import('./types/auth').AuthUser }>('/auth/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ novaSenha }),
+      }),
+  },
+
   getAll: () => req<Character[]>('/characters'),
   create: (c: Character) => req<Character>('/characters', {
     method: 'POST',
