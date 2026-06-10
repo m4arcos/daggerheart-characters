@@ -412,6 +412,45 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 }
 
 /* ── CARTAS DO PERSONAGEM (form section) ── */
+.card-group {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.card-group-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  cursor: pointer;
+  user-select: none;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.card-group-hdr:hover { background: var(--surface3); }
+.card-group-arrow {
+  font-size: .65rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.card-group-title { flex: 1; }
+.card-group-body { padding: 10px 12px; }
+.card-group-search {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  font-size: .8rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.card-group-search:focus { outline: none; border-color: var(--accent); }
+
 .card-section { }
 .card-section-label {
   font-size: .65rem;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useCharStore } from '../store/useCharStore';
 import { Character, ExpEntry, InvEntry, EvoState, uid, makeDefaultCharacter } from '../types/character';
 import { CLS } from '../constants/cls';
@@ -432,20 +432,34 @@ export default function FormScreen({ editId, onDone }: Props) {
       {/* CARTAS DO PERSONAGEM */}
       {form.cls && (
         <CollapsibleSection title="Cartas do Personagem">
-          {/* Subclasse viewer */}
+          {!form.subclasse && dominioCards.length === 0 && !multiFundCard && !multiDomainCards.length && (
+            <p style={{ color: 'var(--text-dim)', fontSize: '.82rem' }}>
+              Selecione uma subclasse para ver as cartas disponíveis.
+            </p>
+          )}
+
+          {/* Grupo: Subclasse */}
           {form.subclasse && subcCards.length > 0 && (
-            <div className="card-section">
-              <div className="card-section-label">
-                Subclasse — {form.subclasse}
+            <CardGroup title={
+              <span>
+                Subclasse — <strong>{form.subclasse}</strong>
                 {subcCards[0]?.atributo_conjuracao && (
-                  <span className="card-section-label-dim"> · {subcCards[0].atributo_conjuracao}</span>
+                  <span style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: '.75rem' }}>
+                    {' · '}{subcCards[0].atributo_conjuracao}
+                  </span>
                 )}
-              </div>
+              </span>
+            }>
               {subcCards.map(card => {
+                const subCount = (evo.p3?.sub ? 1 : 0) + (evo.p4?.sub ? 1 : 0);
                 const isLocked =
-                  (card.nivel_subclasse === 'Especialização' && !evo.p3?.sub) ||
-                  (card.nivel_subclasse === 'Maestria' && !evo.p4?.sub);
-                const lockTier = card.nivel_subclasse === 'Especialização' ? '3º' : '4º';
+                  (card.nivel_subclasse === 'Especialização' && subCount < 1) ||
+                  (card.nivel_subclasse === 'Maestria' && (subCount < 2 || form.multiEnabled));
+                const lockMsg = card.nivel_subclasse === 'Maestria' && form.multiEnabled
+                  ? 'Indisponível com Multiclasse habilitada.'
+                  : card.nivel_subclasse === 'Maestria'
+                  ? `Marque "Melhorar carta de subclasse" 2 vezes em qualquer Patamar para desbloquear (${subCount}/2).`
+                  : 'Marque "Melhorar carta de subclasse" em qualquer Patamar para desbloquear.';
                 return (
                   <div key={card.num} className={`subclass-card-view${isLocked ? ' locked' : ''}`}>
                     <div className="subclass-card-nivel" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -459,9 +473,7 @@ export default function FormScreen({ editId, onDone }: Props) {
                     </div>
                     {isLocked ? (
                       <>
-                        <div className="subclass-card-lock-msg">
-                          Marque "Melhorar carta de subclasse" na Evolução do {lockTier} Patamar para desbloquear.
-                        </div>
+                        <div className="subclass-card-lock-msg">{lockMsg}</div>
                         {expandedCards.has(card.num) && (
                           <div className="subclass-card-desc" style={{ opacity: .6, marginTop: 6 }}>{card.descricao}</div>
                         )}
@@ -472,27 +484,35 @@ export default function FormScreen({ editId, onDone }: Props) {
                   </div>
                 );
               })}
-            </div>
+            </CardGroup>
           )}
 
-          {/* Domain card picker */}
-          {dominioCards.length > 0 && (
-            <div className="card-section" style={form.subclasse && subcCards.length > 0 ? { marginTop: 16 } : undefined}>
-              <div className="card-section-label">
-                Cartas de Domínio
-                {cartasDominio.length > 0 && (
-                  <span className="card-section-label-dim"> · {cartasDominio.length} selecionada{cartasDominio.length > 1 ? 's' : ''}</span>
-                )}
-              </div>
-              {(MULTI[form.cls]?.doms ?? []).map(domName => {
-                const domKey = DOMAIN_NAME_TO_KEY[domName];
-                const cards = dominioCards.filter(c => c.dominio_key === domKey);
-                if (!cards.length) return null;
-                return (
-                  <div key={domName} className="dom-card-group">
-                    <div className={`dom-card-group-hdr pill pill-dom-${domKey}`}>{domName}</div>
-                    <div className="card-pick-list">
-                      {cards.map(card => {
+          {/* Grupos: um por domínio da classe primária */}
+          {(MULTI[form.cls]?.doms ?? []).map(domName => {
+            const domKey = DOMAIN_NAME_TO_KEY[domName];
+            const cards = dominioCards.filter(c => c.dominio_key === domKey);
+            if (!cards.length) return null;
+            const selCount = cards.filter(c => cartasDominio.includes(c.num)).length;
+            return (
+              <CardGroup
+                key={domName}
+                searchable
+                title={
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className={`dom-card-group-hdr pill pill-dom-${domKey}`} style={{ margin: 0 }}>{domName}</span>
+                    {selCount > 0 && (
+                      <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', fontWeight: 400 }}>
+                        {selCount} selecionada{selCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </span>
+                }
+              >
+                {query => (
+                  <div className="card-pick-list">
+                    {cards
+                      .filter(c => { const q = query.toLowerCase(); return c.nome.toLowerCase().includes(q) || (c.descricao ?? '').toLowerCase().includes(q); })
+                      .map(card => {
                         const sel = cartasDominio.includes(card.num);
                         const locked = (card.nivel_dominio ?? 0) > nivel;
                         const expanded = expandedCards.has(card.num);
@@ -502,9 +522,7 @@ export default function FormScreen({ editId, onDone }: Props) {
                             className={`card-pick-row${sel ? ' sel' : ''}${locked ? ' locked' : ''}`}
                             onClick={() => {
                               if (locked) return;
-                              set('cartasDominio',
-                                sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]
-                              );
+                              set('cartasDominio', sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]);
                             }}
                           >
                             <div className="card-pick-row-top">
@@ -523,80 +541,86 @@ export default function FormScreen({ editId, onDone }: Props) {
                           </div>
                         );
                       })}
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Carta fundamental de multiclasse (automática) */}
-          {multiFundCard && (
-            <div className="card-section" style={{ marginTop: 16 }}>
-              <div className="card-section-label">
-                Carta Fundamental — Multiclasse · {form.multiSubclasse}
-                <span className="card-section-label-dim"> (automática)</span>
-              </div>
-              <div className="subclass-card-view">
-                <div className="subclass-card-nivel">Fundamental · {MULTI[form.multiCls!]?.nome}</div>
-                <div className="subclass-card-desc">{multiFundCard.descricao}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Picker de cartas do domínio de multiclasse */}
-          {form.multiEnabled && form.multiDom && multiDomainCards.length > 0 && (
-            <div className="card-section" style={{ marginTop: 16 }}>
-              <div className="card-section-label">
-                Domínio de Multiclasse — {form.multiDom}
-                {cartasDominio.filter(n => multiDomainCards.some(c => c.num === n)).length > 0 && (
-                  <span className="card-section-label-dim">
-                    {' · '}{cartasDominio.filter(n => multiDomainCards.some(c => c.num === n)).length} selecionada(s)
-                  </span>
                 )}
-              </div>
-              <div className="dom-card-group">
-                <div className={`dom-card-group-hdr pill pill-dom-${DOMAIN_NAME_TO_KEY[form.multiDom]}`}>{form.multiDom}</div>
-                <div className="card-pick-list">
-                  {multiDomainCards.map(card => {
-                    const sel = cartasDominio.includes(card.num);
-                    const locked = (card.nivel_dominio ?? 0) > nivel;
-                    const expanded = expandedCards.has(card.num);
-                    return (
-                      <div
-                        key={card.num}
-                        className={`card-pick-row${sel ? ' sel' : ''}${locked ? ' locked' : ''}`}
-                        onClick={() => {
-                          if (locked) return;
-                          set('cartasDominio', sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]);
-                        }}
-                      >
-                        <div className="card-pick-row-top">
-                          <span className="card-pick-chk">{locked ? '🔒' : sel ? '✓' : '○'}</span>
-                          <span className="card-pick-name">{card.nome}</span>
-                          <span className="card-pick-badges">
-                            <span className={`cbadge${locked ? ' cbadge-locked' : ''}`}>Nv.{card.nivel_dominio}</span>
-                            {(card.custo ?? 0) > 0 && <span className="cbadge">{card.custo}⚡</span>}
-                            <span className="cbadge cbadge-tipo">{card.card_tipo}</span>
-                          </span>
-                          <button className="card-expand-btn" onClick={e => { e.stopPropagation(); toggleExpand(card.num); }}>
-                            {expanded ? '▲' : '▼'}
-                          </button>
-                        </div>
-                        {(expanded || (sel && !locked)) && <div className="card-pick-desc">{card.descricao}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+              </CardGroup>
+            );
+          })}
+
+          {/* Grupo: Carta fundamental de multiclasse (automática) */}
+          {multiFundCard && (
+            <CardGroup title={
+              <span>
+                <strong>{form.multiSubclasse}</strong>
+                <span style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: '.75rem' }}>
+                  {' · '}Fundamental · {MULTI[form.multiCls!]?.nome}
+                </span>
+                <span style={{ fontSize: '.68rem', color: 'var(--accent)', fontWeight: 400, marginLeft: 6 }}>
+                  automática
+                </span>
+              </span>
+            }>
+              <div className="subclass-card-desc" style={{ lineHeight: 1.7 }}>{multiFundCard.descricao}</div>
+            </CardGroup>
           )}
 
-          {!form.subclasse && dominioCards.length === 0 && !multiFundCard && !multiDomainCards.length && (
-            <p style={{ color: 'var(--text-dim)', fontSize: '.82rem' }}>
-              Selecione uma subclasse para ver as cartas disponíveis.
-            </p>
-          )}
+          {/* Grupo: Domínio de multiclasse */}
+          {form.multiEnabled && form.multiDom && multiDomainCards.length > 0 && (() => {
+            const domKey = DOMAIN_NAME_TO_KEY[form.multiDom];
+            const selCount = multiDomainCards.filter(c => cartasDominio.includes(c.num)).length;
+            return (
+              <CardGroup
+                searchable
+                title={
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className={`dom-card-group-hdr pill pill-dom-${domKey}`} style={{ margin: 0 }}>{form.multiDom}</span>
+                    <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', fontWeight: 400 }}>Multiclasse</span>
+                    {selCount > 0 && (
+                      <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', fontWeight: 400 }}>
+                        · {selCount} selecionada{selCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </span>
+                }
+              >
+                {query => (
+                  <div className="card-pick-list">
+                    {multiDomainCards
+                      .filter(c => { const q = query.toLowerCase(); return c.nome.toLowerCase().includes(q) || (c.descricao ?? '').toLowerCase().includes(q); })
+                      .map(card => {
+                        const sel = cartasDominio.includes(card.num);
+                        const locked = (card.nivel_dominio ?? 0) > nivel;
+                        const expanded = expandedCards.has(card.num);
+                        return (
+                          <div
+                            key={card.num}
+                            className={`card-pick-row${sel ? ' sel' : ''}${locked ? ' locked' : ''}`}
+                            onClick={() => {
+                              if (locked) return;
+                              set('cartasDominio', sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]);
+                            }}
+                          >
+                            <div className="card-pick-row-top">
+                              <span className="card-pick-chk">{locked ? '🔒' : sel ? '✓' : '○'}</span>
+                              <button className="card-expand-btn" onClick={e => { e.stopPropagation(); toggleExpand(card.num); }}>
+                                {expanded ? '▲' : '▼'}
+                              </button>
+                              <span className="card-pick-name">{card.nome}</span>
+                              <span className="card-pick-badges">
+                                <span className={`cbadge${locked ? ' cbadge-locked' : ''}`}>Nv.{card.nivel_dominio}</span>
+                                {(card.custo ?? 0) > 0 && <span className="cbadge">{card.custo}⚡</span>}
+                                <span className="cbadge cbadge-tipo">{card.card_tipo}</span>
+                              </span>
+                            </div>
+                            {(expanded || (sel && !locked)) && <div className="card-pick-desc">{card.descricao}</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </CardGroup>
+            );
+          })()}
         </CollapsibleSection>
       )}
 
@@ -781,6 +805,40 @@ function WeaponBlock({ title, nome, attr, dados, hab, maos, onNome, onAttr, onDa
 interface InvWeaponBlockProps extends WeaponBlockProps {
   tipo: string;
   onTipo: (v: string) => void;
+}
+
+interface CardGroupProps {
+  title: ReactNode;
+  children: ReactNode | ((query: string) => ReactNode);
+  defaultOpen?: boolean;
+  searchable?: boolean;
+}
+
+function CardGroup({ title, children, defaultOpen = true, searchable = false }: CardGroupProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [query, setQuery] = useState('');
+  return (
+    <div className="card-group">
+      <div className="card-group-hdr" onClick={() => setOpen(o => !o)}>
+        <span className="card-group-arrow" style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+        <span className="card-group-title">{title}</span>
+      </div>
+      {open && (
+        <div className="card-group-body">
+          {searchable && (
+            <input
+              className="card-group-search"
+              placeholder="Buscar carta…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onClick={e => e.stopPropagation()}
+            />
+          )}
+          {typeof children === 'function' ? children(query) : children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function InvWeaponBlock({ title, nome, attr, dados, hab, maos, tipo, onNome, onAttr, onDados, onHab, onMaos, onTipo }: InvWeaponBlockProps) {
