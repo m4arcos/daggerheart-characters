@@ -270,9 +270,6 @@ export default function CardsScreen() {
           ) : (
             <>
               <p>O banco de dados ainda não possui cartas.</p>
-              <p style={{ fontFamily: 'monospace', fontSize: '.85rem' }}>
-                cd backend &amp;&amp; npm run seed
-              </p>
             </>
           )}
         </div>
