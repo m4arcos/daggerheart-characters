@@ -85,6 +85,22 @@ describe('POST /api/auth/login', () => {
     const res = await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
     expect(res.status).toBe(401);
   });
+
+  it('grava last_login no login bem-sucedido', async () => {
+    createUser('u1', 'user@test.com', 'senhaTemp1');
+    const before = Math.floor(Date.now() / 1000);
+    await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
+    const row = db.prepare('SELECT last_login FROM users WHERE email = ?').get('user@test.com') as { last_login: number };
+    expect(row.last_login).toBeGreaterThanOrEqual(before);
+  });
+
+  it('last_login aparece na listagem de admin', async () => {
+    createUser('u1', 'user@test.com', 'senhaTemp1');
+    await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
+    const res = await request(app).get('/api/admin/users').set(auth(adminToken));
+    const found = res.body.find((u: { email: string }) => u.email === 'user@test.com');
+    expect(found.last_login).not.toBeNull();
+  });
 });
 
 describe('POST /api/auth/set-password', () => {

@@ -21,6 +21,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
   const [newInvNome, setNewInvNome] = useState('');
   const [newInvQtd, setNewInvQtd] = useState(1);
   const [newInvDesc, setNewInvDesc] = useState('');
+  const [swapOpen, setSwapOpen] = useState<null | 'principal' | 'secundaria'>(null);
   const [allSelectedCards, setAllSelectedCards] = useState<Card[]>([]);
   const [multiSubclasseCard, setMultiSubclasseCard] = useState<Card | null>(null);
 
@@ -63,6 +64,26 @@ export default function SessionScreen({ charId, onEdit }: Props) {
   const reserva = allSelectedCards.filter(card => !cartasAtivas.includes(card.num));
 
   const patch = (p: Partial<Character>) => patchChar(c.id, p);
+
+  function doSwap(activeSlot: 'principal' | 'secundaria', invSlot: 1 | 2) {
+    const aP = activeSlot === 'principal' ? 'wp' : 'ws';
+    const iP = `wi${invSlot}` as 'wi1' | 'wi2';
+    patch({
+      [`${aP}Nome`]: c[`${iP}Nome` as keyof Character],
+      [`${aP}Attr`]: c[`${iP}Attr` as keyof Character],
+      [`${aP}Dados`]: c[`${iP}Dados` as keyof Character],
+      [`${aP}Hab`]: c[`${iP}Hab` as keyof Character],
+      [`${aP}Maos`]: c[`${iP}Maos` as keyof Character],
+      [`${iP}Nome`]: c[`${aP}Nome` as keyof Character],
+      [`${iP}Attr`]: c[`${aP}Attr` as keyof Character],
+      [`${iP}Dados`]: c[`${aP}Dados` as keyof Character],
+      [`${iP}Hab`]: c[`${aP}Hab` as keyof Character],
+      [`${iP}Maos`]: c[`${aP}Maos` as keyof Character],
+      [`${iP}Tipo`]: activeSlot,
+    });
+    setSwapOpen(null);
+    showNotif('Arma trocada!');
+  }
 
   const toggleBox = (field: 'pvAtual' | 'pfAtual' | 'paAtual', max: number, boxIdx: number) => {
     const current = c[field] ?? max;
@@ -269,8 +290,45 @@ export default function SessionScreen({ charId, onEdit }: Props) {
           <div className="ss">
             <div className="ss-hdr">Armas Ativas</div>
             <div className="ss-body">
-              <WeaponDisplay type="Principal" nome={c.wpNome} attr={c.wpAttr} dados={c.wpDados} hab={c.wpHab} maos={c.wpMaos} prof={c.prof} />
-              <WeaponDisplay type="Secundária" nome={c.wsNome} attr={c.wsAttr} dados={c.wsDados} hab={c.wsHab} maos={c.wsMaos} prof={c.prof} />
+              {(['principal', 'secundaria'] as const).map(slot => {
+                const isOpen = swapOpen === slot;
+                const invOptions = ([1, 2] as const)
+                  .map(n => ({ n, nome: c[`wi${n}Nome` as keyof Character] as string }))
+                  .filter(o => o.nome);
+                return (
+                  <div key={slot}>
+                    {slot === 'principal'
+                      ? <WeaponDisplay type="Principal" nome={c.wpNome} attr={c.wpAttr} dados={c.wpDados} hab={c.wpHab} maos={c.wpMaos} prof={c.prof} />
+                      : <WeaponDisplay type="Secundária" nome={c.wsNome} attr={c.wsAttr} dados={c.wsDados} hab={c.wsHab} maos={c.wsMaos} prof={c.prof} />
+                    }
+                    {invOptions.length > 0 && (
+                      <div style={{ marginTop: 4 }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: '.74rem', width: '100%' }}
+                          onClick={() => setSwapOpen(isOpen ? null : slot)}
+                        >
+                          {isOpen ? '✕ Cancelar' : '⇄ Trocar com inventário'}
+                        </button>
+                        {isOpen && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                            {invOptions.map(({ n, nome }) => (
+                              <button
+                                key={n}
+                                className="btn btn-primary btn-sm"
+                                style={{ fontSize: '.78rem' }}
+                                onClick={() => doSwap(slot, n)}
+                              >
+                                ⇄ {nome}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

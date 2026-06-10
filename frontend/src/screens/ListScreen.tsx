@@ -170,6 +170,7 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
                       <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 400 }}>Nome</th>
                       <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 400 }}>Email</th>
                       <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 400 }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 400 }}>Último login</th>
                       <th style={{ padding: '4px 8px', fontWeight: 400 }}></th>
                     </tr>
                   </thead>
@@ -189,6 +190,12 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
                               <span style={{ color: 'var(--ok)', fontSize: '.78rem' }}>senha definitiva</span>
                             )}
                           </td>
+                          <td style={{ padding: '6px 8px', color: 'var(--text-dim)', fontSize: '.78rem', whiteSpace: 'nowrap' }}>
+                            {u.last_login
+                              ? new Date(u.last_login * 1000).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                              : <span style={{ color: 'var(--border-hi)' }}>nunca</span>
+                            }
+                          </td>
                           <td style={{ padding: '6px 8px', textAlign: 'right' }}>
                             {editUserId === u.id ? (
                               <button className="btn btn-ghost btn-sm" onClick={cancelEdit}>✕</button>
@@ -199,7 +206,7 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
                         </tr>
                         {editUserId === u.id && (
                           <tr key={u.id + '-edit'} style={{ borderBottom: '1px solid var(--border)' }}>
-                            <td colSpan={4} style={{ padding: '0 8px 12px' }}>
+                            <td colSpan={5} style={{ padding: '0 8px 12px' }}>
                               <form onSubmit={handleEditUser} style={{ background: 'var(--surface2)', borderRadius: 'var(--r)', padding: 14, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                                   <div>
@@ -229,7 +236,7 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
                       </>
                     ))}
                     {users.length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: '10px 8px', color: 'var(--text-dim)' }}>Nenhum usuário cadastrado.</td></tr>
+                      <tr><td colSpan={5} style={{ padding: '10px 8px', color: 'var(--text-dim)' }}>Nenhum usuário cadastrado.</td></tr>
                     )}
                   </tbody>
                 </table>
