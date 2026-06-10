@@ -43,6 +43,12 @@ body {
 .btn-danger:hover { background: #e74c3c; }
 .btn-sm { padding: 5px 10px; font-size: .78rem; }
 
+/* ── SHARED FORM ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
+.field-label { display: block; font-size: .65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+.inp { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); color: var(--text); padding: 7px 9px; font-size: .88rem; font-family: inherit; width: 100%; }
+.inp:focus { outline: none; border-color: var(--accent); }
+
 /* ── LIST SCREEN ── */
 .list-wrap { max-width: 920px; margin: 0 auto; padding: 24px 18px; }
 .list-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }

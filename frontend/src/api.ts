@@ -1,10 +1,20 @@
 import { Character } from './types/character';
 import { Card, CardsFilter } from './types/cards';
+import { AdminUser } from './types/auth';
 
 const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api';
 
+function getToken(): string | null {
+  try { return localStorage.getItem('dh_token'); } catch { return null; }
+}
+
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(BASE + url, opts);
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(opts?.headers as Record<string, string> ?? {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const res = await fetch(BASE + url, { ...opts, headers });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -22,6 +32,23 @@ export const api = {
     body: JSON.stringify(c),
   }),
   delete: (id: string) => req<{ ok: boolean }>(`/characters/${id}`, { method: 'DELETE' }),
+
+  admin: {
+    createUser: (nome: string, email: string, senhaTmp: string) =>
+      req<{ id: string; nome: string; email: string }>('/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, senhaTmp }),
+      }),
+    listUsers: () => req<AdminUser[]>('/admin/users'),
+    updateUser: (id: string, nome: string, email: string, senhaTmp?: string) =>
+      req<AdminUser>(`/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, ...(senhaTmp ? { senhaTmp } : {}) }),
+      }),
+  },
+
   cards: {
     getAll: (filters: CardsFilter = {}) => {
       const params = new URLSearchParams();
