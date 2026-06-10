@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCharStore } from '../store/useCharStore';
 import NumInput from '../components/NumInput';
 import { Character, InvEntry, tierFromLevel } from '../types/character';
 import { CLS } from '../constants/cls';
 import { MULTI } from '../constants/multi';
+import { api } from '../api';
+import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
 
 interface Props {
   charId: string;
@@ -19,12 +21,46 @@ export default function SessionScreen({ charId, onEdit }: Props) {
   const [newInvNome, setNewInvNome] = useState('');
   const [newInvQtd, setNewInvQtd] = useState(1);
   const [newInvDesc, setNewInvDesc] = useState('');
+  const [allSelectedCards, setAllSelectedCards] = useState<Card[]>([]);
+  const [multiSubclasseCard, setMultiSubclasseCard] = useState<Card | null>(null);
+
+  const cartasKey = (c?.cartasDominio ?? []).join(',');
+  useEffect(() => {
+    if (!c?.cls) { setAllSelectedCards([]); return; }
+    const domKeys = [...new Set([
+      ...(MULTI[c.cls]?.doms ?? []).map(d => DOMAIN_NAME_TO_KEY[d]).filter(Boolean),
+      ...(c.multiEnabled && c.multiDom ? [DOMAIN_NAME_TO_KEY[c.multiDom]].filter(Boolean) : []),
+    ])];
+    if (!domKeys.length || !c.cartasDominio?.length) { setAllSelectedCards([]); return; }
+    Promise.all(domKeys.map(k => api.cards.getAll({ tipo: 'dominio', dominio_key: k })))
+      .then(results => {
+        const all = results.flat();
+        setAllSelectedCards(all.filter(card => c.cartasDominio!.includes(card.num))
+          .sort((a, b) => (a.nivel_dominio ?? 0) - (b.nivel_dominio ?? 0)));
+      });
+  }, [c?.id, cartasKey, c?.multiEnabled, c?.multiDom]);
+
+  const multiKey = `${c?.multiEnabled}-${c?.multiCls}-${c?.multiSubclasse}`;
+  useEffect(() => {
+    if (!c?.multiEnabled || !c?.multiCls || !c?.multiSubclasse) { setMultiSubclasseCard(null); return; }
+    api.cards.getAll({ tipo: 'subclasse', classe: c.multiCls })
+      .then(cards => {
+        const fund = cards.find(card =>
+          card.subclasse_nome === c.multiSubclasse && card.nivel_subclasse === 'Fundamental'
+        );
+        setMultiSubclasseCard(fund ?? null);
+      })
+      .catch(() => setMultiSubclasseCard(null));
+  }, [c?.id, multiKey]);
 
   if (!c) return <div style={{ padding: 20, color: 'var(--text-dim)' }}>Personagem não encontrado.</div>;
 
   const cls = CLS[c.cls] || { nome: c.cls, sub: '', ev: 10, ha: '', habs: [] };
   const ev = cls.ev + (c.evBonus || 0);
   const multiData = c.multiEnabled && c.multiCls ? MULTI[c.multiCls] : null;
+  const cartasAtivas = c.cartasAtivas ?? [];
+  const naMAo = allSelectedCards.filter(card => cartasAtivas.includes(card.num));
+  const reserva = allSelectedCards.filter(card => !cartasAtivas.includes(card.num));
 
   const patch = (p: Partial<Character>) => patchChar(c.id, p);
 
@@ -39,6 +75,15 @@ export default function SessionScreen({ charId, onEdit }: Props) {
     const cur = c.esperanca ?? 6;
     patch({ esperanca: i < cur ? i : i + 1 });
   };
+
+  const toggleCartaAtiva = (num: number) => {
+    const ativas = c.cartasAtivas ?? [];
+    patch({ cartasAtivas: ativas.includes(num) ? ativas.filter(n => n !== num) : [...ativas, num] });
+  };
+
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const toggleExpand = (num: number) =>
+    setExpandedCards(s => { const n = new Set(s); n.has(num) ? n.delete(num) : n.add(num); return n; });
 
   const addInv = () => {
     const nome = newInvNome.trim();
@@ -71,7 +116,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                 <div className="char-hdr-meta">
                   <span><strong>{cls.nome}</strong>{c.subclasse ? ` · ${c.subclasse}` : ''}</span>
                   <span>Nível <strong>{c.nivel}</strong> <span style={{ color: 'var(--border)' }}>·</span> <strong>{tierFromLevel(c.nivel)}</strong></span>
-                  <span>{c.heranca}{c.genero ? ` · ${c.genero}` : ''}</span>
+                  <span>{c.heranca}{c.comunidade ? ` · ${c.comunidade}` : ''}{c.genero ? ` · ${c.genero}` : ''}</span>
                   {multiData && (
                     <span style={{ color: 'var(--hope)' }}>
                       ✦ Multiclasse: <strong style={{ color: 'var(--hope)' }}>{multiData.nome}</strong>
@@ -333,6 +378,75 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                     <div className="ca-desc">{h.d}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cartas de Domínio */}
+          {(allSelectedCards.length > 0 || multiSubclasseCard) && (
+            <div className="ss">
+              <div className="ss-hdr">Cartas de Domínio</div>
+              <div className="ss-body">
+                {/* Carta fundamental de multiclasse — sempre ativa, não conta para a mão */}
+                {multiSubclasseCard && (
+                  <div style={{ marginBottom: allSelectedCards.length > 0 ? 12 : 0 }}>
+                    <div className="card-state-lbl">Multiclasse — {c.multiSubclasse}</div>
+                    <div className="ca">
+                      <div className="ca-name">
+                        {multiSubclasseCard.nome}
+                        <span className="ca-name-meta"> · Fundamental · {multiData?.nome}</span>
+                      </div>
+                      <div className="ca-desc">{multiSubclasseCard.descricao}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Na mão */}
+                {naMAo.length > 0 && (
+                  <div style={{ marginTop: multiSubclasseCard ? 12 : 0 }}>
+                    <div className="card-state-lbl">Na mão ({naMAo.length})</div>
+                    {naMAo.map(card => (
+                      <div key={card.num} className="ca">
+                        <div className="ca-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span>{card.nome}</span>
+                          <span className="ca-name-meta">Nv.{card.nivel_dominio}{(card.custo ?? 0) > 0 ? ` · ${card.custo}⚡ PF` : ''} · {card.card_tipo}</span>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ padding: '2px 8px', fontSize: '.72rem' }}
+                            onClick={() => toggleCartaAtiva(card.num)}
+                          >→ Reserva</button>
+                        </div>
+                        <div className="ca-desc">{card.descricao}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Reserva */}
+                {reserva.length > 0 && (
+                  <div style={{ marginTop: (naMAo.length > 0 || multiSubclasseCard) ? 12 : 0 }}>
+                    <div className="card-state-lbl">Reserva ({reserva.length})</div>
+                    {reserva.map(card => (
+                      <div key={card.num} className="ca" style={{ opacity: .65 }}>
+                        <div className="ca-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <button className="card-expand-btn" style={{ fontSize: '.8rem', opacity: 1 }} onClick={() => toggleExpand(card.num)}>
+                            {expandedCards.has(card.num) ? '▲' : '▼'}
+                          </button>
+                          <span>{card.nome}</span>
+                          <span className="ca-name-meta">Nv.{card.nivel_dominio}{(card.custo ?? 0) > 0 ? ` · ${card.custo}⚡ PF` : ''}</span>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '2px 8px', fontSize: '.72rem', opacity: 1 }}
+                            onClick={() => toggleCartaAtiva(card.num)}
+                          >→ Na mão</button>
+                        </div>
+                        {expandedCards.has(card.num) && (
+                          <div className="ca-desc" style={{ opacity: 1 }}>{card.descricao}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

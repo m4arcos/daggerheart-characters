@@ -20,6 +20,7 @@ export interface Character {
   cls: ClassKey;
   nome: string;
   heranca: string;
+  comunidade: string;
   genero: string;
   subclasse: string;
   nivel: number;
@@ -50,6 +51,8 @@ export interface Character {
   wi2Tipo: '' | 'primaria' | 'secundaria'; wi2Maos: 'uma' | 'duas';
 
   notas: string;
+  cartasDominio: number[];
+  cartasAtivas: number[];
   exps: ExpEntry[];
   inv: InvEntry[];
 
@@ -66,6 +69,7 @@ export interface Character {
   multiEnabled: boolean;
   multiCls: ClassKey | null;
   multiDom: string | null;
+  multiSubclasse: string;
 
   evo: { p2: EvoState; p3: EvoState; p4: EvoState };
 }
@@ -74,7 +78,7 @@ export function makeDefaultCharacter(): Omit<Character, 'id'> {
   return {
     cls: '' as ClassKey,
     nome: '',
-    heranca: '', genero: '', subclasse: '',
+    heranca: '', comunidade: '', genero: '', subclasse: '',
     nivel: 1, prof: 1,
     agi: 0, for: 0, acu: 0, ins: 0, pre: 0, con: 0,
     agiUp: false, forUp: false, acuUp: false, insUp: false, preUp: false, conUp: false,
@@ -87,11 +91,13 @@ export function makeDefaultCharacter(): Omit<Character, 'id'> {
     wi1Nome: '', wi1Attr: '', wi1Dados: '', wi1Hab: '', wi1Tipo: '', wi1Maos: 'uma',
     wi2Nome: '', wi2Attr: '', wi2Dados: '', wi2Hab: '', wi2Tipo: '', wi2Maos: 'uma',
     notas: '',
+    cartasDominio: [],
+    cartasAtivas: [],
     exps: [{ nome: '', val: 0 }, { nome: '', val: 0 }, { nome: '', val: 0 }, { nome: '', val: 0 }, { nome: '', val: 0 }],
     inv: [],
     pvAtual: 6, pfAtual: 6, esperanca: 6, paAtual: 3,
     pvTemp: 0, pfTemp: 0, paTemp: 0, hopeTemp: 0,
-    multiEnabled: false, multiCls: null, multiDom: null,
+    multiEnabled: false, multiCls: null, multiDom: null, multiSubclasse: '',
     evo: { p2: {}, p3: {}, p4: {} },
   };
 }

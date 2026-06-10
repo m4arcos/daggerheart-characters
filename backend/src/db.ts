@@ -22,8 +22,28 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    num INTEGER NOT NULL UNIQUE,
+    tipo TEXT NOT NULL,
+    nome TEXT NOT NULL,
+    descricao TEXT NOT NULL,
+    dominio_key TEXT,
+    subclasse_nome TEXT,
+    classe TEXT,
+    nome_classe TEXT,
+    nivel_subclasse TEXT,
+    atributo_conjuracao TEXT,
+    nivel_dominio INTEGER,
+    custo INTEGER,
+    card_tipo TEXT
+  )
+`);
+
 export function clearAll(): void {
   db.exec('DELETE FROM characters');
+  db.exec('DELETE FROM cards');
 }
 
 export default db;

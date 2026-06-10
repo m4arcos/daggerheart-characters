@@ -42,6 +42,40 @@ app.delete('/api/characters/:id', (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+app.get('/api/cards', (req: Request, res: Response) => {
+  const { tipo, dominio_key, q, card_tipo, classe } = req.query as Record<string, string>;
+
+  let query = 'SELECT * FROM cards WHERE 1=1';
+  const params: (string | number)[] = [];
+
+  if (tipo) {
+    query += ' AND tipo = ?';
+    params.push(tipo);
+  }
+  if (dominio_key) {
+    query += ' AND dominio_key = ?';
+    params.push(dominio_key);
+  }
+  if (card_tipo) {
+    query += ' AND card_tipo = ?';
+    params.push(card_tipo);
+  }
+  if (classe) {
+    query += ' AND classe = ?';
+    params.push(classe);
+  }
+  if (q) {
+    const term = `%${q}%`;
+    query += ' AND (nome LIKE ? OR descricao LIKE ? OR subclasse_nome LIKE ?)';
+    params.push(term, term, term);
+  }
+
+  query += ' ORDER BY num ASC';
+
+  const rows = db.prepare(query).all(...params);
+  res.json(rows);
+});
+
 if (process.env.NODE_ENV !== 'test') {
   const PORT = parseInt(process.env.PORT || '3001');
   app.listen(PORT, '0.0.0.0', () => {
