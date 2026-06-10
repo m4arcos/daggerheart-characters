@@ -1,7 +1,7 @@
 import { Character } from './types/character';
 import { Card, CardsFilter } from './types/cards';
 
-const BASE = '/api';
+const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api';
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(BASE + url, opts);
