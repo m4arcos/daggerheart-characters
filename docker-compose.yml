@@ -6,10 +6,12 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/data:/app/data
+      - ./backend/entrypoint.sh:/app/entrypoint.sh
     environment:
       - NODE_ENV=development
       - PORT=3001
       - DB_PATH=/app/data/daggerheart.db
+    command: sh /app/entrypoint.sh
 
   frontend:
     build: ./frontend
