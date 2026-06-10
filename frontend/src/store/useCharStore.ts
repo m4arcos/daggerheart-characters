@@ -2,8 +2,15 @@ import { create } from 'zustand';
 import { Character } from '../types/character';
 import { api } from '../api';
 
+export interface CharOwner {
+  id: string;
+  nome: string;
+  email: string;
+}
+
 interface CharStore {
   chars: Character[];
+  charOwners: Record<string, CharOwner | null>;
   loading: boolean;
   notif: string | null;
   fetchChars: () => Promise<void>;
@@ -15,14 +22,21 @@ interface CharStore {
 
 export const useCharStore = create<CharStore>((set, get) => ({
   chars: [],
+  charOwners: {},
   loading: false,
   notif: null,
 
   fetchChars: async () => {
     set({ loading: true });
     try {
-      const chars = await api.getAll();
-      set({ chars });
+      const data = await api.getAll() as (Character & { _owner?: CharOwner | null })[];
+      const owners: Record<string, CharOwner | null> = {};
+      const chars = data.map(c => {
+        const { _owner, ...char } = c;
+        if (_owner !== undefined) owners[char.id] = _owner;
+        return char as Character;
+      });
+      set({ chars, charOwners: owners });
     } finally {
       set({ loading: false });
     }
@@ -42,7 +56,9 @@ export const useCharStore = create<CharStore>((set, get) => ({
 
   deleteChar: async (id) => {
     await api.delete(id);
-    set({ chars: get().chars.filter(c => c.id !== id) });
+    const owners = { ...get().charOwners };
+    delete owners[id];
+    set({ chars: get().chars.filter(c => c.id !== id), charOwners: owners });
   },
 
   patchChar: async (id, patch) => {

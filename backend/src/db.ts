@@ -17,6 +17,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS characters (
     id TEXT PRIMARY KEY,
     data TEXT NOT NULL,
+    user_id TEXT,
     created_at INTEGER DEFAULT (unixepoch()),
     updated_at INTEGER DEFAULT (unixepoch())
   )
@@ -41,9 +42,29 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT,
+    senha_temp TEXT NOT NULL,
+    temp_ativa INTEGER DEFAULT 1,
+    is_admin INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (unixepoch()),
+    updated_at INTEGER DEFAULT (unixepoch())
+  )
+`);
+
+// Migration: add user_id to characters if it doesn't exist yet
+try {
+  db.exec('ALTER TABLE characters ADD COLUMN user_id TEXT');
+} catch (_) { /* column already exists */ }
+
 export function clearAll(): void {
   db.exec('DELETE FROM characters');
   db.exec('DELETE FROM cards');
+  db.exec('DELETE FROM users');
 }
 
 export default db;
