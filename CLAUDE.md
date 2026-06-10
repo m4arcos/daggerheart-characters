@@ -663,7 +663,7 @@ Estas regras se aplicam a **toda** alteração de código feita neste projeto. S
    ```bash
    cd backend && npm test
    ```
-   - Todos os 22 testes devem passar.
+   - Todos os 31 testes devem passar.
    - O banco de dados de teste é em memória (`:memory:`) — não afeta dados persistidos.
    - Se adicionar endpoint novo ou alterar comportamento de um existente: **crie ou atualize os testes**.
 

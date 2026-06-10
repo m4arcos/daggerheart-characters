@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/index';
+import db from '../src/db';
 
 // Personagem base mínimo válido
 const CHAR_A = {
@@ -207,6 +208,110 @@ describe('DELETE /api/characters/:id', () => {
     await request(app).delete('/api/characters/char-a');
     const listRes = await request(app).get('/api/characters');
     expect(listRes.body).toHaveLength(1);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /api/cards
+// ──────────────────────────────────────────────────────────────────────────────
+
+type PartialCard = { num: number; tipo: string; nome: string; descricao: string; [k: string]: unknown }
+
+function insertCard(card: PartialCard) {
+  db.prepare(`
+    INSERT INTO cards (num, tipo, nome, descricao, dominio_key, subclasse_nome, classe, nome_classe,
+      nivel_subclasse, atributo_conjuracao, nivel_dominio, custo, card_tipo)
+    VALUES (@num, @tipo, @nome, @descricao, @dominio_key, @subclasse_nome, @classe, @nome_classe,
+      @nivel_subclasse, @atributo_conjuracao, @nivel_dominio, @custo, @card_tipo)
+  `).run({
+    dominio_key: null, subclasse_nome: null, classe: null, nome_classe: null,
+    nivel_subclasse: null, atributo_conjuracao: null, nivel_dominio: null,
+    custo: null, card_tipo: null,
+    ...card,
+  });
+}
+
+describe('GET /api/cards', () => {
+  it('retorna 200 com array vazio quando não há cartas', async () => {
+    const res = await request(app).get('/api/cards');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('retorna cartas em ordem de num', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Desc', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'Desc2', dominio_key: 'graca', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+
+    const res = await request(app).get('/api/cards');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body[0].num).toBe(1);
+    expect(res.body[1].num).toBe(82);
+  });
+
+  it('filtra por tipo', async () => {
+    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+
+    const res = await request(app).get('/api/cards?tipo=dominio');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].tipo).toBe('dominio');
+  });
+
+  it('filtra por dominio_key', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'Carta Arcano', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 106, tipo: 'dominio', nome: 'Carta Lamina', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+
+    const res = await request(app).get('/api/cards?dominio_key=arcano');
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('Carta Arcano');
+  });
+
+  it('busca por texto em nome', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Talismã mágico', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 106, tipo: 'dominio', nome: 'Fraternidade', descricao: 'Outra descrição', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+
+    const res = await request(app).get('/api/cards?q=R%C3%BAnica');
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('Proteção Rúnica');
+  });
+
+  it('busca por texto em descricao', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'Possui talismã único', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'Descrição comum', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+
+    const res = await request(app).get(`/api/cards?q=${encodeURIComponent('talismã')}`);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].num).toBe(82);
+  });
+
+  it('filtra por card_tipo', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+
+    const res = await request(app).get('/api/cards?card_tipo=Talento');
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('B');
+  });
+
+  it('filtra por classe', async () => {
+    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+    insertCard({ num: 13, tipo: 'subclasse', nome: 'Baluarte', descricao: 'D', subclasse_nome: 'Baluarte', classe: 'guardiao', nome_classe: 'Guardião', nivel_subclasse: 'Fundamental' });
+
+    const res = await request(app).get('/api/cards?classe=bardo');
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].classe).toBe('bardo');
+  });
+
+  it('combina múltiplos filtros', async () => {
+    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    insertCard({ num: 83, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    insertCard({ num: 106, tipo: 'dominio', nome: 'C', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+
+    const res = await request(app).get(`/api/cards?dominio_key=arcano&card_tipo=${encodeURIComponent('Feitiço')}`);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].num).toBe(82);
   });
 });
 

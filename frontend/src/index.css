@@ -310,3 +310,233 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   .frow.c4 { grid-template-columns: repeat(2, 1fr); }
   .frow.c3 { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── CARDS SCREEN ── */
+.cards-wrap { max-width: 1200px; margin: 0 auto; padding: 20px 18px; }
+.cards-top { margin-bottom: 14px; }
+.cards-search {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text); padding: 9px 13px; font-size: .9rem;
+  font-family: inherit;
+}
+.cards-search:focus { outline: none; border-color: var(--accent); }
+.cards-search::placeholder { color: var(--text-dim); }
+
+.filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pill {
+  display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px;
+  border: 1px solid var(--border); font-size: .76rem; cursor: pointer;
+  transition: all .18s; background: transparent; color: var(--text-dim); font-family: inherit;
+}
+.pill:hover { border-color: var(--border-hi); color: var(--text); }
+.pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* Domain-colored pills */
+.pill-dom-arcano.active     { background: rgba(155,111,196,.15); border-color: #b589d8; color: #b589d8; }
+.pill-dom-lamina.active     { background: rgba(224,80,80,.15);   border-color: #e87070; color: #e87070; }
+.pill-dom-falange.active    { background: rgba(224,160,48,.15);  border-color: var(--hope); color: var(--hope); }
+.pill-dom-codice.active     { background: rgba(74,154,186,.15);  border-color: var(--ar); color: var(--ar); }
+.pill-dom-graca.active      { background: rgba(197,95,160,.15);  border-color: #d87fba; color: #d87fba; }
+.pill-dom-meia-noite.active { background: rgba(107,127,196,.15); border-color: #8fa0e0; color: #8fa0e0; }
+.pill-dom-sabedoria.active  { background: rgba(46,204,113,.15);  border-color: var(--ok); color: var(--ok); }
+.pill-dom-esplendor.active  { background: rgba(224,148,48,.15);  border-color: #e8a040; color: #e8a040; }
+.pill-dom-valor.active      { background: rgba(74,184,196,.15);  border-color: #5ac8d4; color: #5ac8d4; }
+
+.cards-count { font-size: .75rem; color: var(--text-dim); margin-bottom: 14px; margin-top: 4px; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+
+/* Card item */
+.card-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 14px; cursor: pointer; transition: border-color .2s, box-shadow .2s; display: flex; flex-direction: column; gap: 5px;
+}
+.card-item:hover { border-color: var(--border-hi); box-shadow: 0 0 14px rgba(200,170,90,.07); }
+.card-item-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.card-item-tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; flex: 1; }
+.card-num { font-size: .62rem; color: var(--text-dim); margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.card-item-name { font-family: Georgia, serif; font-size: .97rem; line-height: 1.3; }
+.card-item-level { font-size: .85rem; color: var(--text-dim); font-family: inherit; }
+.card-item-meta { font-size: .73rem; color: var(--text-dim); }
+.card-item-desc {
+  font-size: .8rem; color: var(--text-dim); line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 2px;
+}
+
+/* Card tags */
+.card-tag {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px;
+  font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  border: 1px solid transparent;
+}
+.card-tag-cls    { background: var(--accent-dim); color: var(--accent); border-color: rgba(200,170,90,.3); }
+.card-tag-anc    { background: rgba(74,154,186,.12); color: var(--ar); border-color: rgba(74,154,186,.3); }
+.card-tag-com    { background: rgba(46,204,113,.12); color: var(--ok); border-color: rgba(46,204,113,.3); }
+.card-tag-nivel  { background: var(--surface2); color: var(--text-dim); border-color: var(--border); }
+.card-tag-tipo   { background: var(--surface3); color: var(--text-dim); border-color: var(--border); }
+
+/* Domain-colored card tags */
+.card-tag-dom-arcano     { background: rgba(155,111,196,.12); color: #b589d8; border-color: rgba(155,111,196,.3); }
+.card-tag-dom-lamina     { background: rgba(224,80,80,.12);   color: #e87070; border-color: rgba(224,80,80,.3); }
+.card-tag-dom-falange    { background: rgba(224,160,48,.12);  color: var(--hope); border-color: rgba(224,160,48,.3); }
+.card-tag-dom-codice     { background: rgba(74,154,186,.12);  color: var(--ar); border-color: rgba(74,154,186,.3); }
+.card-tag-dom-graca      { background: rgba(197,95,160,.12);  color: #d87fba; border-color: rgba(197,95,160,.3); }
+.card-tag-dom-meia-noite { background: rgba(107,127,196,.12); color: #8fa0e0; border-color: rgba(107,127,196,.3); }
+.card-tag-dom-sabedoria  { background: rgba(46,204,113,.12);  color: var(--ok); border-color: rgba(46,204,113,.3); }
+.card-tag-dom-esplendor  { background: rgba(224,148,48,.12);  color: #e8a040; border-color: rgba(224,148,48,.3); }
+.card-tag-dom-valor      { background: rgba(74,184,196,.12);  color: #5ac8d4; border-color: rgba(74,184,196,.3); }
+
+/* Card detail modal */
+.card-modal { max-width: 600px !important; width: 94vw !important; max-height: 85vh; overflow-y: auto; }
+.card-modal-hdr { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.card-modal-name { font-family: Georgia, serif; font-size: 1.25rem; margin-top: 4px; }
+.card-modal-meta { display: flex; gap: 16px; font-size: .8rem; color: var(--text-dim); margin-bottom: 14px; flex-wrap: wrap; }
+.card-modal-meta strong { color: var(--text); }
+.card-modal-desc { font-size: .88rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+
+@media (max-width: 760px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ── CARD INLINE PREVIEW (form: ancestralidade / comunidade) ── */
+.card-inline-preview {
+  margin-top: 7px;
+  padding: 9px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: .76rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* ── CARTAS DO PERSONAGEM (form section) ── */
+.card-section { }
+.card-section-label {
+  font-size: .65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.card-section-label-dim { color: var(--text-dim); font-weight: 400; }
+
+/* Subclass card viewer */
+.subclass-card-view {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(200,170,90,.25);
+  border-radius: var(--r);
+}
+.subclass-card-nivel {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+.subclass-card-desc { font-size: .78rem; color: var(--text-dim); line-height: 1.6; white-space: pre-line; }
+.subclass-card-view.locked { opacity: .5; }
+.subclass-card-lock { font-size: .8rem; }
+.subclass-card-lock-msg {
+  font-size: .74rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Domain card group */
+.dom-card-group { margin-bottom: 12px; }
+.dom-card-group-hdr {
+  display: inline-block;
+  margin-bottom: 7px;
+  font-size: .7rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.card-pick-list { display: flex; flex-direction: column; gap: 4px; }
+.card-pick-row {
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.card-pick-row:hover { border-color: var(--border-hi); }
+.card-pick-row.sel {
+  background: var(--accent-dim);
+  border-color: rgba(200,170,90,.4);
+}
+.card-pick-row-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.card-pick-chk {
+  font-size: .85rem;
+  width: 16px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.card-pick-row.sel .card-pick-chk { color: var(--accent); }
+.card-pick-name { flex: 1; font-size: .84rem; }
+.card-pick-badges { display: flex; gap: 4px; flex-shrink: 0; }
+.cbadge {
+  font-size: .62rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.cbadge-tipo { color: var(--accent); border-color: rgba(200,170,90,.3); background: var(--accent-dim); }
+.card-pick-desc {
+  margin-top: 7px;
+  font-size: .75rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  white-space: pre-line;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.card-pick-row.locked {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.card-pick-row.locked:hover { border-color: var(--border); }
+.cbadge-locked { color: var(--danger) !important; border-color: rgba(192,57,43,.4) !important; }
+
+/* Session: ca-name-meta */
+.ca-name-meta { font-weight: 400; font-size: .72rem; color: var(--text-dim); text-transform: none; letter-spacing: 0; }
+
+/* Expand toggle button for card descriptions */
+.card-expand-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: .72rem;
+  padding: 0 3px;
+  flex-shrink: 0;
+  opacity: .7;
+  transition: opacity .15s, color .15s;
+  line-height: 1;
+}
+.card-expand-btn:hover { opacity: 1; color: var(--accent); }
+
+/* Session: card state labels (Na mão / Reserva) */
+.card-state-lbl {
+  font-size: .62rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}

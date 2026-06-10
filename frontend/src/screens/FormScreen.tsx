@@ -6,6 +6,8 @@ import { MULTI } from '../constants/multi';
 import { EVO_TIERS, TIER_RANGES } from '../constants/evo';
 import CollapsibleSection from '../components/CollapsibleSection';
 import NumInput from '../components/NumInput';
+import { api } from '../api';
+import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
 
 interface Props {
   editId: string | null;
@@ -15,11 +17,12 @@ interface Props {
 type FormState = Omit<Character, 'id'>;
 
 function buildForm(c?: Character): FormState {
+  const defaults = makeDefaultCharacter() as FormState;
   if (c) {
     const { id: _id, ...rest } = c;
-    return rest;
+    return { ...defaults, ...rest };
   }
-  return makeDefaultCharacter() as FormState;
+  return defaults;
 }
 
 export default function FormScreen({ editId, onDone }: Props) {
@@ -37,6 +40,65 @@ export default function FormScreen({ editId, onDone }: Props) {
   const [evo, setEvo] = useState<{ p2: EvoState; p3: EvoState; p4: EvoState }>(() =>
     existing?.evo || { p2: {}, p3: {}, p4: {} }
   );
+  const [subclasseOpts, setSubclasseOpts] = useState<string[]>([]);
+  const [allSubclasseCards, setAllSubclasseCards] = useState<Card[]>([]);
+  const [dominioCards, setDominioCards] = useState<Card[]>([]);
+  const [ancestralidadeOpts, setAncestralidades] = useState<Card[]>([]);
+  const [comunidadeOpts, setComunidades] = useState<Card[]>([]);
+  const [multiSubclasseOpts, setMultiSubclasseOpts] = useState<string[]>([]);
+  const [allMultiSubclasseCards, setAllMultiSubclasseCards] = useState<Card[]>([]);
+  const [multiDomainCards, setMultiDomainCards] = useState<Card[]>([]);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const toggleExpand = (num: number) =>
+    setExpandedCards(s => { const n = new Set(s); n.has(num) ? n.delete(num) : n.add(num); return n; });
+
+  useEffect(() => {
+    api.cards.getAll({ tipo: 'ancestralidade' })
+      .then(c => setAncestralidades(c.sort((a, b) => a.nome.localeCompare(b.nome))));
+    api.cards.getAll({ tipo: 'comunidade' })
+      .then(c => setComunidades(c.sort((a, b) => a.nome.localeCompare(b.nome))));
+  }, []);
+
+  useEffect(() => {
+    if (!form.cls) {
+      setSubclasseOpts([]); setAllSubclasseCards([]); setDominioCards([]); return;
+    }
+    api.cards.getAll({ tipo: 'subclasse', classe: form.cls }).then(cards => {
+      setAllSubclasseCards(cards);
+      const unique = [...new Set(cards.map(c => c.subclasse_nome).filter(Boolean))] as string[];
+      setSubclasseOpts(unique);
+    }).catch(() => { setSubclasseOpts([]); setAllSubclasseCards([]); });
+    const domNames = MULTI[form.cls]?.doms ?? [];
+    const domKeys = domNames.map(d => DOMAIN_NAME_TO_KEY[d]).filter(Boolean);
+    Promise.all(domKeys.map(k => api.cards.getAll({ tipo: 'dominio', dominio_key: k })))
+      .then(results => setDominioCards(
+        results.flat().sort((a, b) => (a.nivel_dominio ?? 0) - (b.nivel_dominio ?? 0))
+      ))
+      .catch(() => setDominioCards([]));
+  }, [form.cls]);
+
+  useEffect(() => {
+    if (!form.multiEnabled || !form.multiCls) {
+      setMultiSubclasseOpts([]); setAllMultiSubclasseCards([]); return;
+    }
+    api.cards.getAll({ tipo: 'subclasse', classe: form.multiCls })
+      .then(cards => {
+        setAllMultiSubclasseCards(cards);
+        const unique = [...new Set(cards.map(c => c.subclasse_nome).filter(Boolean))] as string[];
+        setMultiSubclasseOpts(unique);
+      }).catch(() => { setMultiSubclasseOpts([]); setAllMultiSubclasseCards([]); });
+  }, [form.multiEnabled, form.multiCls]);
+
+  useEffect(() => {
+    if (!form.multiEnabled || !form.multiDom) { setMultiDomainCards([]); return; }
+    const domKey = DOMAIN_NAME_TO_KEY[form.multiDom];
+    if (!domKey) { setMultiDomainCards([]); return; }
+    api.cards.getAll({ tipo: 'dominio', dominio_key: domKey })
+      .then(cards => setMultiDomainCards(
+        cards.sort((a, b) => (a.nivel_dominio ?? 0) - (b.nivel_dominio ?? 0))
+      ))
+      .catch(() => setMultiDomainCards([]));
+  }, [form.multiEnabled, form.multiDom]);
 
   useEffect(() => {
     const c = editId ? chars.find(x => x.id === editId) : undefined;
@@ -93,6 +155,13 @@ export default function FormScreen({ editId, onDone }: Props) {
   const nivel = form.nivel || 1;
   const clsData = form.cls ? CLS[form.cls] : null;
   const primaryDoms = form.cls && MULTI[form.cls] ? MULTI[form.cls].doms : [];
+  const subcCards = allSubclasseCards.filter(c => c.subclasse_nome === form.subclasse);
+  const cartasDominio = form.cartasDominio ?? [];
+  const selectedAncCard = ancestralidadeOpts.find(a => a.nome === form.heranca);
+  const selectedComCard = comunidadeOpts.find(c => c.nome === (form.comunidade ?? ''));
+  const multiFundCard = form.multiEnabled && form.multiSubclasse
+    ? allMultiSubclasseCards.find(c => c.subclasse_nome === form.multiSubclasse && c.nivel_subclasse === 'Fundamental')
+    : null;
 
   return (
     <div className="form-wrap">
@@ -106,6 +175,7 @@ export default function FormScreen({ editId, onDone }: Props) {
               onClick={() => {
                 set('cls', k as Character['cls']);
                 set('evBonus', 0);
+                set('subclasse', '');
               }}
             >
               <div className="cls-opt-name">{v.nome}</div>
@@ -117,20 +187,42 @@ export default function FormScreen({ editId, onDone }: Props) {
 
       {/* IDENTIDADE */}
       <CollapsibleSection title="Identidade">
-        <div className="frow c3">
+        <div className="frow c2">
           <div className="fg"><label>Nome</label>
             <input type="text" value={form.nome} placeholder="Nome do personagem" onChange={e => set('nome', e.target.value)} />
-          </div>
-          <div className="fg"><label>Herança</label>
-            <input type="text" value={form.heranca} placeholder="Ex: Humano, Elfo…" onChange={e => set('heranca', e.target.value)} />
           </div>
           <div className="fg"><label>Gênero</label>
             <input type="text" value={form.genero} placeholder="Ex: Masculino…" onChange={e => set('genero', e.target.value)} />
           </div>
         </div>
+        <div className="frow c2">
+          <div className="fg">
+            <label>Ancestralidade</label>
+            <select value={form.heranca} onChange={e => set('heranca', e.target.value)}>
+              <option value="">— Escolha a ancestralidade —</option>
+              {ancestralidadeOpts.map(a => <option key={a.num} value={a.nome}>{a.nome}</option>)}
+            </select>
+            {selectedAncCard && <div className="card-inline-preview">{selectedAncCard.descricao}</div>}
+          </div>
+          <div className="fg">
+            <label>Comunidade</label>
+            <select value={form.comunidade ?? ''} onChange={e => set('comunidade', e.target.value)}>
+              <option value="">— Escolha a comunidade —</option>
+              {comunidadeOpts.map(c => <option key={c.num} value={c.nome}>{c.nome}</option>)}
+            </select>
+            {selectedComCard && <div className="card-inline-preview">{selectedComCard.descricao}</div>}
+          </div>
+        </div>
         <div className="frow c3">
           <div className="fg"><label>Subclasse</label>
-            <input type="text" value={form.subclasse} placeholder="Ex: Baluarte…" onChange={e => set('subclasse', e.target.value)} />
+            {subclasseOpts.length > 0 ? (
+              <select value={form.subclasse} onChange={e => set('subclasse', e.target.value)}>
+                <option value="">— Escolha a subclasse —</option>
+                {subclasseOpts.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            ) : (
+              <input type="text" value={form.subclasse} placeholder={form.cls ? 'Carregando…' : 'Selecione uma classe primeiro'} disabled={!form.cls} onChange={e => set('subclasse', e.target.value)} />
+            )}
           </div>
           <div className="fg"><label>Nível</label>
             <NumInput inputMode="numeric" min={1} max={10} step={1} fallback={1} value={form.nivel}
@@ -337,13 +429,184 @@ export default function FormScreen({ editId, onDone }: Props) {
         </div>
       </CollapsibleSection>
 
+      {/* CARTAS DO PERSONAGEM */}
+      {form.cls && (
+        <CollapsibleSection title="Cartas do Personagem">
+          {/* Subclasse viewer */}
+          {form.subclasse && subcCards.length > 0 && (
+            <div className="card-section">
+              <div className="card-section-label">
+                Subclasse — {form.subclasse}
+                {subcCards[0]?.atributo_conjuracao && (
+                  <span className="card-section-label-dim"> · {subcCards[0].atributo_conjuracao}</span>
+                )}
+              </div>
+              {subcCards.map(card => {
+                const isLocked =
+                  (card.nivel_subclasse === 'Especialização' && !evo.p3?.sub) ||
+                  (card.nivel_subclasse === 'Maestria' && !evo.p4?.sub);
+                const lockTier = card.nivel_subclasse === 'Especialização' ? '3º' : '4º';
+                return (
+                  <div key={card.num} className={`subclass-card-view${isLocked ? ' locked' : ''}`}>
+                    <div className="subclass-card-nivel" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {isLocked && (
+                        <button className="card-expand-btn" onClick={e => { e.stopPropagation(); toggleExpand(card.num); }}>
+                          {expandedCards.has(card.num) ? '▲' : '▼'}
+                        </button>
+                      )}
+                      {card.nivel_subclasse}
+                      {isLocked && <span className="subclass-card-lock">🔒</span>}
+                    </div>
+                    {isLocked ? (
+                      <>
+                        <div className="subclass-card-lock-msg">
+                          Marque "Melhorar carta de subclasse" na Evolução do {lockTier} Patamar para desbloquear.
+                        </div>
+                        {expandedCards.has(card.num) && (
+                          <div className="subclass-card-desc" style={{ opacity: .6, marginTop: 6 }}>{card.descricao}</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="subclass-card-desc">{card.descricao}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Domain card picker */}
+          {dominioCards.length > 0 && (
+            <div className="card-section" style={form.subclasse && subcCards.length > 0 ? { marginTop: 16 } : undefined}>
+              <div className="card-section-label">
+                Cartas de Domínio
+                {cartasDominio.length > 0 && (
+                  <span className="card-section-label-dim"> · {cartasDominio.length} selecionada{cartasDominio.length > 1 ? 's' : ''}</span>
+                )}
+              </div>
+              {(MULTI[form.cls]?.doms ?? []).map(domName => {
+                const domKey = DOMAIN_NAME_TO_KEY[domName];
+                const cards = dominioCards.filter(c => c.dominio_key === domKey);
+                if (!cards.length) return null;
+                return (
+                  <div key={domName} className="dom-card-group">
+                    <div className={`dom-card-group-hdr pill pill-dom-${domKey}`}>{domName}</div>
+                    <div className="card-pick-list">
+                      {cards.map(card => {
+                        const sel = cartasDominio.includes(card.num);
+                        const locked = (card.nivel_dominio ?? 0) > nivel;
+                        const expanded = expandedCards.has(card.num);
+                        return (
+                          <div
+                            key={card.num}
+                            className={`card-pick-row${sel ? ' sel' : ''}${locked ? ' locked' : ''}`}
+                            onClick={() => {
+                              if (locked) return;
+                              set('cartasDominio',
+                                sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]
+                              );
+                            }}
+                          >
+                            <div className="card-pick-row-top">
+                              <span className="card-pick-chk">{locked ? '🔒' : sel ? '✓' : '○'}</span>
+                              <button className="card-expand-btn" onClick={e => { e.stopPropagation(); toggleExpand(card.num); }}>
+                                {expanded ? '▲' : '▼'}
+                              </button>
+                              <span className="card-pick-name">{card.nome}</span>
+                              <span className="card-pick-badges">
+                                <span className={`cbadge${locked ? ' cbadge-locked' : ''}`}>Nv.{card.nivel_dominio}</span>
+                                {(card.custo ?? 0) > 0 && <span className="cbadge">{card.custo}⚡</span>}
+                                <span className="cbadge cbadge-tipo">{card.card_tipo}</span>
+                              </span>
+                            </div>
+                            {(expanded || (sel && !locked)) && <div className="card-pick-desc">{card.descricao}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Carta fundamental de multiclasse (automática) */}
+          {multiFundCard && (
+            <div className="card-section" style={{ marginTop: 16 }}>
+              <div className="card-section-label">
+                Carta Fundamental — Multiclasse · {form.multiSubclasse}
+                <span className="card-section-label-dim"> (automática)</span>
+              </div>
+              <div className="subclass-card-view">
+                <div className="subclass-card-nivel">Fundamental · {MULTI[form.multiCls!]?.nome}</div>
+                <div className="subclass-card-desc">{multiFundCard.descricao}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Picker de cartas do domínio de multiclasse */}
+          {form.multiEnabled && form.multiDom && multiDomainCards.length > 0 && (
+            <div className="card-section" style={{ marginTop: 16 }}>
+              <div className="card-section-label">
+                Domínio de Multiclasse — {form.multiDom}
+                {cartasDominio.filter(n => multiDomainCards.some(c => c.num === n)).length > 0 && (
+                  <span className="card-section-label-dim">
+                    {' · '}{cartasDominio.filter(n => multiDomainCards.some(c => c.num === n)).length} selecionada(s)
+                  </span>
+                )}
+              </div>
+              <div className="dom-card-group">
+                <div className={`dom-card-group-hdr pill pill-dom-${DOMAIN_NAME_TO_KEY[form.multiDom]}`}>{form.multiDom}</div>
+                <div className="card-pick-list">
+                  {multiDomainCards.map(card => {
+                    const sel = cartasDominio.includes(card.num);
+                    const locked = (card.nivel_dominio ?? 0) > nivel;
+                    const expanded = expandedCards.has(card.num);
+                    return (
+                      <div
+                        key={card.num}
+                        className={`card-pick-row${sel ? ' sel' : ''}${locked ? ' locked' : ''}`}
+                        onClick={() => {
+                          if (locked) return;
+                          set('cartasDominio', sel ? cartasDominio.filter(n => n !== card.num) : [...cartasDominio, card.num]);
+                        }}
+                      >
+                        <div className="card-pick-row-top">
+                          <span className="card-pick-chk">{locked ? '🔒' : sel ? '✓' : '○'}</span>
+                          <span className="card-pick-name">{card.nome}</span>
+                          <span className="card-pick-badges">
+                            <span className={`cbadge${locked ? ' cbadge-locked' : ''}`}>Nv.{card.nivel_dominio}</span>
+                            {(card.custo ?? 0) > 0 && <span className="cbadge">{card.custo}⚡</span>}
+                            <span className="cbadge cbadge-tipo">{card.card_tipo}</span>
+                          </span>
+                          <button className="card-expand-btn" onClick={e => { e.stopPropagation(); toggleExpand(card.num); }}>
+                            {expanded ? '▲' : '▼'}
+                          </button>
+                        </div>
+                        {(expanded || (sel && !locked)) && <div className="card-pick-desc">{card.descricao}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!form.subclasse && dominioCards.length === 0 && !multiFundCard && !multiDomainCards.length && (
+            <p style={{ color: 'var(--text-dim)', fontSize: '.82rem' }}>
+              Selecione uma subclasse para ver as cartas disponíveis.
+            </p>
+          )}
+        </CollapsibleSection>
+      )}
+
       {/* MULTICLASSE */}
       <CollapsibleSection title="Multiclasse">
         <label className="multi-toggle">
           <input type="checkbox" checked={form.multiEnabled}
             onChange={e => {
               set('multiEnabled', e.target.checked);
-              if (!e.target.checked) { set('multiCls', null); set('multiDom', null); }
+              if (!e.target.checked) { set('multiCls', null); set('multiDom', null); set('multiSubclasse', ''); }
             }} />
           <span style={{ fontSize: '.82rem', color: 'var(--text-dim)', cursor: 'pointer' }}>
             Habilitar multiclasse para este personagem
@@ -363,7 +626,7 @@ export default function FormScreen({ editId, onDone }: Props) {
                 <div
                   key={k}
                   className={`multi-cls-opt${form.multiCls === k ? ' sel' : ''}${k === form.cls ? ' disabled' : ''}`}
-                  onClick={() => { if (k !== form.cls) { set('multiCls', k); set('multiDom', null); } }}
+                  onClick={() => { if (k !== form.cls) { set('multiCls', k); set('multiDom', null); set('multiSubclasse', ''); } }}
                 >
                   {m.nome}
                 </div>
@@ -372,6 +635,21 @@ export default function FormScreen({ editId, onDone }: Props) {
 
             {form.multiCls && MULTI[form.multiCls] && (
               <>
+                <div style={{ fontSize: '.6rem', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8, marginTop: 14 }}>
+                  Escolha a subclasse
+                </div>
+                <div className="fg" style={{ marginBottom: multiFundCard ? 10 : 14 }}>
+                  <select value={form.multiSubclasse ?? ''} onChange={e => set('multiSubclasse', e.target.value)}>
+                    <option value="">— Escolha a subclasse —</option>
+                    {multiSubclasseOpts.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                {multiFundCard && (
+                  <div className="subclass-card-view" style={{ marginBottom: 14 }}>
+                    <div className="subclass-card-nivel">Fundamental · {MULTI[form.multiCls!]?.nome}</div>
+                    <div className="subclass-card-desc">{multiFundCard.descricao}</div>
+                  </div>
+                )}
                 <div style={{ fontSize: '.6rem', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
                   Escolha o domínio
                 </div>

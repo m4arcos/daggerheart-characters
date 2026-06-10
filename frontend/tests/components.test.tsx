@@ -21,6 +21,18 @@ vi.mock('../src/store/useCharStore', () => ({
   useCharStore: (selector: (s: typeof mockStore) => unknown) => selector(mockStore),
 }))
 
+vi.mock('../src/api', () => ({
+  api: {
+    getAll: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue({}),
+    update: vi.fn().mockResolvedValue({}),
+    delete: vi.fn().mockResolvedValue({ ok: true }),
+    cards: {
+      getAll: vi.fn().mockResolvedValue([]),
+    },
+  },
+}))
+
 import ListScreen from '../src/screens/ListScreen'
 import FormScreen from '../src/screens/FormScreen'
 import SessionScreen from '../src/screens/SessionScreen'
@@ -46,12 +58,15 @@ const BASE_CHAR: Character = {
   gP: 0, gB: 0, gBau: 0,
   wi1Nome: '', wi1Attr: '', wi1Dados: '', wi1Hab: '', wi1Tipo: '', wi1Maos: 'uma',
   wi2Nome: '', wi2Attr: '', wi2Dados: '', wi2Hab: '', wi2Tipo: '', wi2Maos: 'uma',
+  comunidade: '',
+  cartasDominio: [],
+  cartasAtivas: [],
   notas: '',
   exps: [{ nome: 'Combate', val: 2 }, { nome: 'Sobrevivência', val: 1 }],
   inv: [],
   pvAtual: 6, pfAtual: 6, esperanca: 6, paAtual: 3,
   pvTemp: 0, pfTemp: 0, paTemp: 0, hopeTemp: 0,
-  multiEnabled: false, multiCls: null, multiDom: null,
+  multiEnabled: false, multiCls: null, multiDom: null, multiSubclasse: '',
   evo: { p2: {}, p3: {}, p4: {} },
 }
 
