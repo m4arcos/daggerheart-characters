@@ -5,6 +5,7 @@ export default function LoginScreen() {
   const { login, loginError, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -44,15 +45,30 @@ export default function LoginScreen() {
 
             <div>
               <label className="field-label" htmlFor="login-senha">Senha</label>
-              <input
-                id="login-senha"
-                type="password"
-                className="inp"
-                value={senha}
-                onChange={e => { setSenha(e.target.value); clearError(); }}
-                placeholder="••••••••"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="login-senha"
+                  type={showSenha ? 'text' : 'password'}
+                  className="inp"
+                  value={senha}
+                  onChange={e => { setSenha(e.target.value); clearError(); }}
+                  placeholder="••••••••"
+                  style={{ paddingRight: 40 }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenha(v => !v)}
+                  style={{
+                    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-dim)', fontSize: '.9rem', padding: 0, lineHeight: 1,
+                  }}
+                  aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {showSenha ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
 
             {loginError && (

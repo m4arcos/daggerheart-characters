@@ -44,6 +44,8 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Email ou senha inválidos' });
   }
 
+  db.prepare('UPDATE users SET last_login = unixepoch() WHERE id = ?').run(user.id);
+
   const authUser: AuthUser = {
     userId: user.id,
     nome: user.nome,
@@ -102,7 +104,7 @@ app.post('/api/admin/users', requireAuth, requireAdmin, (req: Request, res: Resp
 
 app.get('/api/admin/users', requireAuth, requireAdmin, (_req: Request, res: Response) => {
   const users = db.prepare(
-    'SELECT id, nome, email, temp_ativa, is_admin, created_at FROM users ORDER BY created_at ASC'
+    'SELECT id, nome, email, temp_ativa, is_admin, created_at, last_login FROM users ORDER BY created_at ASC'
   ).all();
   res.json(users);
 });
@@ -136,7 +138,7 @@ app.put('/api/admin/users/:id', requireAuth, requireAdmin, (req: Request, res: R
   }
 
   const updated = db.prepare(
-    'SELECT id, nome, email, temp_ativa, is_admin, created_at FROM users WHERE id = ?'
+    'SELECT id, nome, email, temp_ativa, is_admin, created_at, last_login FROM users WHERE id = ?'
   ).get(id);
   res.json(updated);
 });

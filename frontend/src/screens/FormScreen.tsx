@@ -113,6 +113,29 @@ export default function FormScreen({ editId, onDone }: Props) {
   const set = (field: keyof FormState, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
 
+  const [swapOpen, setSwapOpen] = useState<null | 'principal' | 'secundaria'>(null);
+
+  function doSwap(activeSlot: 'principal' | 'secundaria', invSlot: 1 | 2) {
+    const aP = activeSlot === 'principal' ? 'wp' : 'ws';
+    const iP = `wi${invSlot}` as 'wi1' | 'wi2';
+    type F = FormState;
+    setForm(prev => ({
+      ...prev,
+      [`${aP}Nome`]: prev[`${iP}Nome` as keyof F],
+      [`${aP}Attr`]: prev[`${iP}Attr` as keyof F],
+      [`${aP}Dados`]: prev[`${iP}Dados` as keyof F],
+      [`${aP}Hab`]: prev[`${iP}Hab` as keyof F],
+      [`${aP}Maos`]: prev[`${iP}Maos` as keyof F],
+      [`${iP}Nome`]: prev[`${aP}Nome` as keyof F],
+      [`${iP}Attr`]: prev[`${aP}Attr` as keyof F],
+      [`${iP}Dados`]: prev[`${aP}Dados` as keyof F],
+      [`${iP}Hab`]: prev[`${aP}Hab` as keyof F],
+      [`${iP}Maos`]: prev[`${aP}Maos` as keyof F],
+      [`${iP}Tipo`]: activeSlot,
+    }));
+    setSwapOpen(null);
+  }
+
   const handleSave = async () => {
     if (!form.cls) { showNotif('Selecione uma classe!'); return; }
     const nome = form.nome.trim();
@@ -240,22 +263,14 @@ export default function FormScreen({ editId, onDone }: Props) {
         <div className="frow c6">
           {(['agi', 'for', 'acu', 'ins', 'pre', 'con'] as const).map(a => {
             const labels: Record<string, string> = { agi: 'Agilidade', for: 'Força', acu: 'Acuidade', ins: 'Instinto', pre: 'Presença', con: 'Conhecimento' };
+            const upKey = `${a}Up` as keyof FormState;
+            const checked = !!form[upKey];
             return (
               <div key={a} className="fg">
                 <label>{labels[a]}</label>
                 <NumInput className="attr-in" step={1} value={form[a]}
                   onChange={v => set(a, v)} />
-              </div>
-            );
-          })}
-        </div>
-        <div className="frow c6">
-          {(['agi', 'for', 'acu', 'ins', 'pre', 'con'] as const).map(a => {
-            const upKey = `${a}Up` as keyof FormState;
-            const checked = !!form[upKey];
-            return (
-              <div key={a} className="fg">
-                <label>↑ Evoluído</label>
+                <label style={{ marginTop: 6 }}>↑ Evoluído</label>
                 <div className={`chk-toggle${checked ? ' active' : ''}`} onClick={() => set(upKey, !checked)}>
                   {checked ? 'Sim' : '—'}
                 </div>
@@ -299,18 +314,46 @@ export default function FormScreen({ editId, onDone }: Props) {
       {/* ARMAS ATIVAS */}
       <CollapsibleSection title="Armas Ativas">
         <div className="frow c2">
-          <WeaponBlock
-            title="Principal"
-            nome={form.wpNome} attr={form.wpAttr} dados={form.wpDados} hab={form.wpHab} maos={form.wpMaos}
-            onNome={v => set('wpNome', v)} onAttr={v => set('wpAttr', v)} onDados={v => set('wpDados', v)}
-            onHab={v => set('wpHab', v)} onMaos={v => set('wpMaos', v as 'uma' | 'duas')}
-          />
-          <WeaponBlock
-            title="Secundária"
-            nome={form.wsNome} attr={form.wsAttr} dados={form.wsDados} hab={form.wsHab} maos={form.wsMaos}
-            onNome={v => set('wsNome', v)} onAttr={v => set('wsAttr', v)} onDados={v => set('wsDados', v)}
-            onHab={v => set('wsHab', v)} onMaos={v => set('wsMaos', v as 'uma' | 'duas')}
-          />
+          {(['principal', 'secundaria'] as const).map(slot => {
+            const isOpen = swapOpen === slot;
+            const invOptions = ([1, 2] as const)
+              .map(n => ({ n, nome: form[`wi${n}Nome` as keyof FormState] as string }))
+              .filter(o => o.nome);
+            return (
+              <div key={slot}>
+                {slot === 'principal'
+                  ? <WeaponBlock title="Principal" nome={form.wpNome} attr={form.wpAttr} dados={form.wpDados} hab={form.wpHab} maos={form.wpMaos} onNome={v => set('wpNome', v)} onAttr={v => set('wpAttr', v)} onDados={v => set('wpDados', v)} onHab={v => set('wpHab', v)} onMaos={v => set('wpMaos', v as 'uma' | 'duas')} />
+                  : <WeaponBlock title="Secundária" nome={form.wsNome} attr={form.wsAttr} dados={form.wsDados} hab={form.wsHab} maos={form.wsMaos} onNome={v => set('wsNome', v)} onAttr={v => set('wsAttr', v)} onDados={v => set('wsDados', v)} onHab={v => set('wsHab', v)} onMaos={v => set('wsMaos', v as 'uma' | 'duas')} />
+                }
+                {invOptions.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ width: '100%' }}
+                      onClick={() => setSwapOpen(isOpen ? null : slot)}
+                    >
+                      {isOpen ? '✕ Cancelar troca' : '⇄ Trocar com inventário'}
+                    </button>
+                    {isOpen && (
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        {invOptions.map(({ n, nome }) => (
+                          <button
+                            key={n}
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={() => doSwap(slot, n)}
+                          >
+                            ⇄ {nome}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </CollapsibleSection>
 
@@ -785,7 +828,7 @@ function WeaponBlock({ title, nome, attr, dados, hab, maos, onNome, onAttr, onDa
         <div className="fg"><label>Atributo & Alcance</label>
           <input type="text" value={attr} placeholder="Ex: Presença CaC" onChange={e => onAttr(e.target.value)} />
         </div>
-        <div className="fg"><label>Dados & Tipo</label>
+        <div className="fg"><label>Dano & Tipo</label>
           <input type="text" value={dados} placeholder="Ex: d8 fís" onChange={e => onDados(e.target.value)} />
         </div>
         <div className="fg"><label>Empunhadura</label>
@@ -852,7 +895,7 @@ function InvWeaponBlock({ title, nome, attr, dados, hab, maos, tipo, onNome, onA
         <div className="fg"><label>Atributo & Alcance</label>
           <input type="text" value={attr} onChange={e => onAttr(e.target.value)} />
         </div>
-        <div className="fg"><label>Dados & Tipo</label>
+        <div className="fg"><label>Dano & Tipo</label>
           <input type="text" value={dados} onChange={e => onDados(e.target.value)} />
         </div>
         <div className="fg"><label>Empunhadura</label>

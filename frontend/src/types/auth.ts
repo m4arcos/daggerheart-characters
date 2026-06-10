@@ -13,4 +13,5 @@ export interface AdminUser {
   temp_ativa: number;
   is_admin: number;
   created_at: number;
+  last_login: number | null;
 }

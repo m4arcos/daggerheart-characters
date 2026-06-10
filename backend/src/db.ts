@@ -61,6 +61,11 @@ try {
   db.exec('ALTER TABLE characters ADD COLUMN user_id TEXT');
 } catch (_) { /* column already exists */ }
 
+// Migration: add last_login to users if it doesn't exist yet
+try {
+  db.exec('ALTER TABLE users ADD COLUMN last_login INTEGER');
+} catch (_) { /* column already exists */ }
+
 export function clearAll(): void {
   db.exec('DELETE FROM characters');
   db.exec('DELETE FROM cards');
