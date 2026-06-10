@@ -8,6 +8,7 @@ import type { Character } from '../src/types/character'
 
 const mockStore = {
   chars: [] as Character[],
+  charOwners: {} as Record<string, unknown>,
   loading: false,
   notif: null as string | null,
   fetchChars: vi.fn(),
@@ -19,6 +20,11 @@ const mockStore = {
 
 vi.mock('../src/store/useCharStore', () => ({
   useCharStore: (selector: (s: typeof mockStore) => unknown) => selector(mockStore),
+}))
+
+vi.mock('../src/store/useAuthStore', () => ({
+  useAuthStore: (selector: (s: { user: { nome: string; isAdmin: boolean } | null; logout: () => void }) => unknown) =>
+    selector({ user: { nome: 'Test User', isAdmin: false }, logout: vi.fn() }),
 }))
 
 vi.mock('../src/api', () => ({
@@ -72,6 +78,7 @@ const BASE_CHAR: Character = {
 
 beforeEach(() => {
   mockStore.chars = []
+  mockStore.charOwners = {}
   mockStore.fetchChars = vi.fn()
   mockStore.saveChar = vi.fn().mockResolvedValue(undefined)
   mockStore.deleteChar = vi.fn().mockResolvedValue(undefined)

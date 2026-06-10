@@ -10,6 +10,7 @@
  */
 
 import Database from 'better-sqlite3';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import fs from 'fs';
 
@@ -37,6 +38,20 @@ db.exec(`
     nivel_dominio INTEGER,
     custo INTEGER,
     card_tipo TEXT
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT,
+    senha_temp TEXT NOT NULL,
+    temp_ativa INTEGER DEFAULT 1,
+    is_admin INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (unixepoch()),
+    updated_at INTEGER DEFAULT (unixepoch())
   )
 `);
 
@@ -2767,3 +2782,21 @@ seed(all)
 
 console.log(`✓ Seeder concluído: ${SUBCLASSES.length} subclasses, ${DOMINIOS.length} domínios, ${ANCESTRALIDADES.length} ancestralidades, ${COMUNIDADES.length} comunidades.`)
 console.log(`  Total: ${all.length} cartas inseridas/atualizadas.`)
+
+// ─── Seed usuário admin ───────────────────────────────────────────────────────
+
+function uidAdmin() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2)
+}
+
+const adminEmail = 'm4arcos@gmail.com'
+const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail)
+
+if (!adminExists) {
+  db.prepare(
+    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES (?, ?, ?, ?, 1, 1)'
+  ).run(uidAdmin(), 'Marcos - Admin', adminEmail, bcrypt.hashSync('adminTempDH!', 10))
+  console.log(`✓ Usuário admin criado: ${adminEmail}`)
+} else {
+  console.log(`  Usuário admin já existe: ${adminEmail}`)
+}
