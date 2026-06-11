@@ -1,6 +1,6 @@
 # Daggerheart — Fichas de Personagem
 
-Sistema web de fichas de personagem para o RPG **Daggerheart**, construído em React com backend Node.js e banco de dados SQLite, executado via Docker.
+Sistema web de fichas de personagem para o RPG **Daggerheart**, construído em React com backend Node.js e banco de dados PostgreSQL, executado via Docker.
 
 ---
 
@@ -13,13 +13,64 @@ Sistema web de fichas de personagem para o RPG **Daggerheart**, construído em R
 - **Evolução de Personagem**: três blocos de patamar (2º, 3º, 4º) com checkboxes individuais, destacando o patamar atual
 - **Inventário na sessão**: adição e remoção de itens diretamente na tela de jogo
 - **Persistência de estado de sessão**: PV, PF, PA e Esperança são preservados ao editar o personagem
-- **API REST**: backend com SQLite via `better-sqlite3`, dados armazenados em volume Docker persistente
+- **API REST**: backend com PostgreSQL, dados armazenados em volume Docker persistente
 
 ---
 
 ## Pré-requisitos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) ou Docker Engine + Compose
+
+---
+
+## Banco de Dados (PostgreSQL)
+
+O sistema utiliza **PostgreSQL 16** gerenciado pelo próprio Docker Compose. Não é necessário instalar o PostgreSQL localmente para rodar a aplicação.
+
+### Credenciais padrão (desenvolvimento)
+
+| Parâmetro | Valor |
+|-----------|-------|
+| Host | `localhost` |
+| Porta | `5433` (host) / `5432` (interno Docker) |
+| Usuário | `postgres` |
+| Senha | `postgres` |
+| Banco | `daggerheart` |
+
+A string de conexão completa é:
+```
+postgresql://postgres:postgres@localhost:5433/daggerheart
+```
+
+> A porta exposta no host é **5433** para evitar conflito com outras instâncias de PostgreSQL já em execução na máquina.
+
+### Configuração via variável de ambiente
+
+A variável `DATABASE_URL` controla a conexão. Ela é definida automaticamente pelo Docker Compose para o container do backend. Para sobrescrever (ex: apontar para um PostgreSQL externo):
+
+```bash
+DATABASE_URL=postgresql://usuario:senha@host:5432/daggerheart docker compose up -d
+```
+
+### Dados persistidos
+
+Os dados sobrevivem a reinicializações graças ao volume Docker `pgdata`. Para inspecionar o banco diretamente com qualquer cliente SQL (DBeaver, TablePlus, psql), conecte na porta **5433** do localhost com as credenciais acima.
+
+```bash
+# Exemplo com psql
+psql -h localhost -p 5433 -U postgres -d daggerheart
+```
+
+### Seeder e usuário admin
+
+Ao subir, o backend executa o seeder automaticamente. Ele popula a tabela `cards` com 270 cartas do Daggerheart e cria o usuário administrador inicial:
+
+| Campo | Valor |
+|-------|-------|
+| E-mail | `m4arcos@gmail.com` |
+| Senha temporária | `adminTempDH!` |
+
+No primeiro acesso, o sistema pedirá para definir uma senha definitiva.
 
 ---
 
@@ -44,7 +95,7 @@ Aguarde os builds (na primeira vez, ~2–3 minutos). Acesse em seguida:
 docker compose down
 ```
 
-Os dados são persistidos no volume Docker `db-data` e sobrevivem a reinicializações.
+Os dados são persistidos no volume Docker `pgdata` e sobrevivem a reinicializações.
 
 ### Remover tudo (inclusive dados)
 
@@ -93,7 +144,17 @@ npm run test:watch   # modo watch
 
 ### Backend
 
-Os testes ficam em `backend/tests/` e usam **Vitest** + **supertest**. Banco de dados em memória (`:memory:`) — não afeta dados persistidos.
+Os testes ficam em `backend/tests/` e usam **Vitest** + **supertest**. Requerem um PostgreSQL acessível — por padrão apontam para `localhost:5432` com banco `daggerheart_test`.
+
+**Pré-requisito:** PostgreSQL rodando localmente (ou via `docker compose up postgres -d`).
+
+Crie o banco de testes antes da primeira execução:
+
+```bash
+psql -h localhost -p 5433 -U postgres -c "CREATE DATABASE daggerheart_test;"
+```
+
+Configure a URL de conexão em `backend/vitest.config.ts` (campo `DATABASE_URL`) caso suas credenciais locais sejam diferentes das padrão.
 
 ```bash
 cd backend
@@ -104,7 +165,7 @@ npm run test:watch   # modo watch
 
 | Arquivo | Descrição |
 |---------|-----------|
-| `api.test.ts` | 22 testes de integração cobrindo todos os endpoints: GET, POST (validação), PUT (404/preservação de estado), DELETE (404/isolamento), e fluxo CRUD completo |
+| `api.test.ts` | 101 testes de integração cobrindo autenticação, CRUD de personagens, gestão de campanhas, biblioteca de cartas e controle de acesso por perfil |
 
 ---
 
@@ -118,8 +179,10 @@ daggerheart-characters/
 │   ├── Dockerfile
 │   ├── package.json
 │   └── src/
-│       ├── db.ts          # Conexão SQLite e criação de tabela
-│       └── index.ts       # Express: GET/POST/PUT/DELETE /api/characters
+│       ├── db.ts          # Pool PostgreSQL (pg), initDb() e clearAll()
+│       ├── index.ts       # Express: rotas autenticadas REST
+│       ├── auth.ts        # JWT, bcrypt, middlewares requireAuth/requireAdmin
+│       └── seeder.ts      # Popula cards e cria usuário admin
 │
 └── frontend/
     ├── Dockerfile
@@ -165,7 +228,7 @@ daggerheart-characters/
 | `PUT` | `/api/characters/:id` | Atualiza um personagem existente |
 | `DELETE` | `/api/characters/:id` | Remove um personagem |
 
-Os dados de cada personagem são armazenados como JSON serializado na coluna `data` da tabela `characters` no SQLite.
+Os dados de cada personagem são armazenados como JSON serializado na coluna `data` da tabela `characters` no PostgreSQL.
 
 ---
 
