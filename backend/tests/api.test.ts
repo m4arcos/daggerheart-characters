@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '../src/index';
 import db from '../src/db';
 import { hashPassword } from '../src/auth';
-import { testToken, adminToken, otherToken, TEST_USER_ID } from './setup';
+import { testToken, adminToken, otherToken, TEST_USER_ID, OTHER_USER_ID } from './setup';
 
 // Personagem base mínimo válido
 const CHAR_A = {
@@ -128,6 +128,29 @@ describe('POST /api/auth/set-password', () => {
   });
 });
 
+describe('GET /api/auth/me', () => {
+  it('retorna requiresPasswordChange=false quando temp_ativa=0', async () => {
+    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
+      .run(hashPassword('DefPass'), TEST_USER_ID);
+    const res = await request(app).get('/api/auth/me').set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeDefined();
+    expect(res.body.user.requiresPasswordChange).toBe(false);
+  });
+
+  it('reflete temp_ativa=1 mesmo com token antigo de requiresPasswordChange=false', async () => {
+    // temp_ativa já é 1 no beforeEach — simula admin que resetou após login
+    const res = await request(app).get('/api/auth/me').set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.user.requiresPasswordChange).toBe(true);
+  });
+
+  it('retorna 401 sem token', async () => {
+    const res = await request(app).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+});
+
 describe('POST /api/admin/users', () => {
   it('admin cria usuário com sucesso', async () => {
     const res = await request(app)
@@ -199,6 +222,34 @@ describe('PUT /api/admin/users/:id', () => {
     expect(res.body.temp_ativa).toBe(1);
   });
 
+  it('reset de senha limpa senha_hash para forçar uso da temp', async () => {
+    const id = await createAndGetId('hashclear@test.com');
+    // simula usuário que já definiu senha definitiva
+    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
+      .run(hashPassword('SenhaAntigaDefinitiva'), id);
+    // admin reseta a senha
+    await request(app).put(`/api/admin/users/${id}`).set(auth(adminToken))
+      .send({ nome: 'HashClear', email: 'hashclear@test.com', senhaTmp: 'NovaTemporal' });
+    const user = db.prepare('SELECT senha_hash, temp_ativa FROM users WHERE id = ?').get(id) as { senha_hash: string | null; temp_ativa: number };
+    expect(user.senha_hash).toBeNull();
+    expect(user.temp_ativa).toBe(1);
+  });
+
+  it('login com senha antiga falha após reset; login com nova temp retorna requiresPasswordChange=true', async () => {
+    const id = await createAndGetId('forcechange@test.com');
+    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
+      .run(hashPassword('SenhaDefinitiva'), id);
+    await request(app).put(`/api/admin/users/${id}`).set(auth(adminToken))
+      .send({ nome: 'ForceChange', email: 'forcechange@test.com', senhaTmp: 'NovaTemp123' });
+    // login com senha antiga deve falhar
+    const old = await request(app).post('/api/auth/login').send({ email: 'forcechange@test.com', senha: 'SenhaDefinitiva' });
+    expect(old.status).toBe(401);
+    // login com nova temp deve exigir troca
+    const novo = await request(app).post('/api/auth/login').send({ email: 'forcechange@test.com', senha: 'NovaTemp123' });
+    expect(novo.status).toBe(200);
+    expect(novo.body.user.requiresPasswordChange).toBe(true);
+  });
+
   it('retorna 404 para id inexistente', async () => {
     const res = await request(app).put('/api/admin/users/nao-existe').set(auth(adminToken))
       .send({ nome: 'X', email: 'x@test.com' });
@@ -207,7 +258,7 @@ describe('PUT /api/admin/users/:id', () => {
 
   it('retorna 409 para email de outro usuário', async () => {
     await createAndGetId('occupied@test.com');
-    const id2 = await createAndGetId('other@test.com');
+    const id2 = await createAndGetId('another@test.com');
     const res = await request(app).put(`/api/admin/users/${id2}`).set(auth(adminToken))
       .send({ nome: 'Conflict', email: 'occupied@test.com' });
     expect(res.status).toBe(409);
@@ -561,6 +612,312 @@ describe('GET /api/cards', () => {
     const res = await request(app).get(`/api/cards?dominio_key=arcano&card_tipo=${encodeURIComponent('Feitiço')}`).set(auth(testToken));
     expect(res.body).toHaveLength(1);
     expect(res.body[0].num).toBe(82);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Campaigns
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('POST /api/campaigns', () => {
+  it('cria campanha com sucesso (201) e retorna código único', async () => {
+    const res = await request(app)
+      .post('/api/campaigns')
+      .set(auth(testToken))
+      .send({ nome: 'Campanha Teste' });
+    expect(res.status).toBe(201);
+    expect(res.body.nome).toBe('Campanha Teste');
+    expect(res.body.codigo).toBeDefined();
+    expect(res.body.codigo).toHaveLength(6);
+    expect(res.body.id).toBeDefined();
+  });
+
+  it('retorna 400 sem nome', async () => {
+    const res = await request(app)
+      .post('/api/campaigns')
+      .set(auth(testToken))
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/nome/i);
+  });
+
+  it('retorna 401 sem token', async () => {
+    const res = await request(app).post('/api/campaigns').send({ nome: 'X' });
+    expect(res.status).toBe(401);
+  });
+
+  it('criador é adicionado como membro aprovado', async () => {
+    const res = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp1' });
+    const campId = res.body.id;
+    const detailRes = await request(app).get(`/api/campaigns/${campId}`).set(auth(testToken));
+    expect(detailRes.body.membros[0].user_id).toBe(TEST_USER_ID);
+    expect(detailRes.body.membros[0].status).toBe('aprovado');
+  });
+});
+
+describe('GET /api/campaigns', () => {
+  it('lista apenas campanhas do usuário', async () => {
+    await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Minha Camp' });
+    await request(app).post('/api/campaigns').set(auth(adminToken)).send({ nome: 'Camp Admin' });
+    const res = await request(app).get('/api/campaigns').set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('Minha Camp');
+  });
+
+  it('retorna array vazio quando não há campanhas', async () => {
+    const res = await request(app).get('/api/campaigns').set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('retorna 401 sem token', async () => {
+    const res = await request(app).get('/api/campaigns');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/campaigns/join', () => {
+  it('junta com código válido (201, status pendente)', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    const res = await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('pendente');
+    expect(res.body.campaign_id).toBe(id);
+  });
+
+  it('retorna 404 para código inválido', async () => {
+    const res = await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo: 'XXXXXX' });
+    expect(res.status).toBe(404);
+  });
+
+  it('retorna 409 se já é membro', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    expect(res.status).toBe(409);
+  });
+
+  it('retorna 400 sem codigo', async () => {
+    const res = await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({});
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/campaigns/:id', () => {
+  it('retorna detalhes e membros para membro aprovado', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).get(`/api/campaigns/${id}`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.nome).toBe('Camp');
+    expect(Array.isArray(res.body.membros)).toBe(true);
+    expect(res.body.isCreator).toBe(true);
+  });
+
+  it('retorna 403 para não-membro', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).get(`/api/campaigns/${id}`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 403 para membro pendente', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).get(`/api/campaigns/${id}`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 404 para campanha inexistente', async () => {
+    const res = await request(app).get('/api/campaigns/nao-existe').set(auth(testToken));
+    expect(res.status).toBe(404);
+  });
+
+  it('membro aprovado acessa detalhes com isCreator=false', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(testToken));
+    const res = await request(app).get(`/api/campaigns/${id}`).set(auth(otherToken));
+    expect(res.status).toBe(200);
+    expect(res.body.isCreator).toBe(false);
+  });
+});
+
+describe('DELETE /api/campaigns/:id', () => {
+  it('retorna 403 para não-criador', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).delete(`/api/campaigns/${id}`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('criador deleta campanha com sucesso', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).delete(`/api/campaigns/${id}`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('ao deletar campanha, desvincula personagens', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const char = { ...CHAR_A, campaign_id: id };
+    await request(app).post('/api/characters').set(auth(testToken)).send(char);
+    await request(app).delete(`/api/campaigns/${id}`).set(auth(testToken));
+    const listRes = await request(app).get('/api/characters').set(auth(testToken));
+    expect(listRes.body[0].campaign_id).toBeFalsy();
+  });
+
+  it('retorna 404 para campanha inexistente', async () => {
+    const res = await request(app).delete('/api/campaigns/nao-existe').set(auth(testToken));
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/campaigns/:id/members/:uid/approve', () => {
+  it('aprova membro pendente', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    const detail = await request(app).get(`/api/campaigns/${id}`).set(auth(testToken));
+    const member = detail.body.membros.find((m: any) => m.user_id === OTHER_USER_ID);
+    expect(member.status).toBe('aprovado');
+  });
+
+  it('retorna 403 para não-criador', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 404 para membro inexistente', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).post(`/api/campaigns/${id}/members/nao-existe/approve`).set(auth(testToken));
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/campaigns/:id/members/:uid', () => {
+  it('criador remove membro e desvincula personagens', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(testToken));
+    // Criar personagem vinculado
+    const char = { ...CHAR_A, id: 'char-other', campaign_id: id };
+    await request(app).post('/api/characters').set(auth(otherToken)).send(char);
+    const res = await request(app).delete(`/api/campaigns/${id}/members/${OTHER_USER_ID}`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    // Personagem desvinculado
+    const listRes = await request(app).get('/api/characters').set(auth(otherToken));
+    expect(listRes.body[0].campaign_id).toBeFalsy();
+  });
+
+  it('membro pode sair da campanha por conta própria', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).delete(`/api/campaigns/${id}/members/${OTHER_USER_ID}`).set(auth(otherToken));
+    expect(res.status).toBe(200);
+  });
+
+  it('retorna 403 quando terceiro tenta remover outro', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(adminToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).delete(`/api/campaigns/${id}/members/${OTHER_USER_ID}`).set(auth(testToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 400 ao tentar remover o criador', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).delete(`/api/campaigns/${id}/members/${TEST_USER_ID}`).set(auth(testToken));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/campaigns/:id/characters', () => {
+  it('retorna personagens visíveis para membro aprovado', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const char = { ...CHAR_A, campaign_id: id };
+    await request(app).post('/api/characters').set(auth(testToken)).send(char);
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('Thorin');
+    expect(res.body[0]._owner).toBeDefined();
+  });
+
+  it('personagens privados ficam ocultos para não-criador', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    // Membro público
+    const char = { ...CHAR_A, campaign_id: id };
+    await request(app).post('/api/characters').set(auth(testToken)).send(char);
+    // Membro privado
+    const charPrivate = { ...CHAR_B, campaign_id: id, privado: true };
+    await request(app).post('/api/characters').set(auth(testToken)).send(charPrivate);
+    // Other user joins and gets approved
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(testToken));
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(otherToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].nome).toBe('Thorin');
+  });
+
+  it('criador vê todos os personagens incluindo privados', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const char = { ...CHAR_A, campaign_id: id };
+    await request(app).post('/api/characters').set(auth(testToken)).send(char);
+    const charPrivate = { ...CHAR_B, campaign_id: id, privado: true };
+    await request(app).post('/api/characters').set(auth(testToken)).send(charPrivate);
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(testToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+  });
+
+  it('retorna 403 para não-membro', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { id } = campRes.body;
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('retorna 403 para membro pendente', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(otherToken));
+    expect(res.status).toBe(403);
+  });
+
+  it('não-criador pode ver próprios personagens privados', async () => {
+    const campRes = await request(app).post('/api/campaigns').set(auth(testToken)).send({ nome: 'Camp' });
+    const { codigo, id } = campRes.body;
+    await request(app).post('/api/campaigns/join').set(auth(otherToken)).send({ codigo });
+    await request(app).post(`/api/campaigns/${id}/members/${OTHER_USER_ID}/approve`).set(auth(testToken));
+    const charPrivate = { ...CHAR_A, id: 'char-private-own', campaign_id: id, privado: true };
+    await request(app).post('/api/characters').set(auth(otherToken)).send(charPrivate);
+    const res = await request(app).get(`/api/campaigns/${id}/characters`).set(auth(otherToken));
+    expect(res.status).toBe(200);
+    expect(res.body.some((c: any) => c.id === 'char-private-own')).toBe(true);
   });
 });
 

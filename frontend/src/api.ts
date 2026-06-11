@@ -33,6 +33,7 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ novaSenha }),
       }),
+    me: () => req<{ token: string; user: import('./types/auth').AuthUser }>('/auth/me'),
   },
 
   getAll: () => req<Character[]>('/characters'),
@@ -62,6 +63,17 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome, email, ...(senhaTmp ? { senhaTmp } : {}) }),
       }),
+  },
+
+  campaigns: {
+    list: () => req<import('./types/campaign').Campaign[]>('/campaigns'),
+    create: (nome: string) => req<import('./types/campaign').Campaign>('/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome }) }),
+    join: (codigo: string) => req<{ campaign_id: string; campaign_nome: string; status: string }>('/campaigns/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo }) }),
+    get: (id: string) => req<import('./types/campaign').CampaignDetail>(`/campaigns/${id}`),
+    delete: (id: string) => req<{ ok: boolean }>(`/campaigns/${id}`, { method: 'DELETE' }),
+    approveMember: (id: string, uid: string) => req<{ ok: boolean }>(`/campaigns/${id}/members/${uid}/approve`, { method: 'POST' }),
+    removeMember: (id: string, uid: string) => req<{ ok: boolean }>(`/campaigns/${id}/members/${uid}`, { method: 'DELETE' }),
+    getCharacters: (id: string) => req<import('./types/character').Character[]>(`/campaigns/${id}/characters`),
   },
 
   cards: {

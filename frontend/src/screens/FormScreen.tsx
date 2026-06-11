@@ -8,10 +8,12 @@ import CollapsibleSection from '../components/CollapsibleSection';
 import NumInput from '../components/NumInput';
 import { api } from '../api';
 import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
+import { Campaign } from '../types/campaign';
 
 interface Props {
   editId: string | null;
   onDone: () => void;
+  campaignId?: string;
 }
 
 type FormState = Omit<Character, 'id'>;
@@ -25,7 +27,7 @@ function buildForm(c?: Character): FormState {
   return defaults;
 }
 
-export default function FormScreen({ editId, onDone }: Props) {
+export default function FormScreen({ editId, onDone, campaignId }: Props) {
   const chars = useCharStore(s => s.chars);
   const saveChar = useCharStore(s => s.saveChar);
   const showNotif = useCharStore(s => s.showNotif);
@@ -51,6 +53,11 @@ export default function FormScreen({ editId, onDone }: Props) {
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const toggleExpand = (num: number) =>
     setExpandedCards(s => { const n = new Set(s); n.has(num) ? n.delete(num) : n.add(num); return n; });
+
+  const [myCampaigns, setMyCampaigns] = useState<Campaign[]>([]);
+  useEffect(() => {
+    api.campaigns.list().then(setMyCampaigns).catch(() => setMyCampaigns([]));
+  }, []);
 
   useEffect(() => {
     api.cards.getAll({ tipo: 'ancestralidade' })
@@ -109,6 +116,13 @@ export default function FormScreen({ editId, onDone }: Props) {
       setEvo(c.evo || { p2: {}, p3: {}, p4: {} });
     }
   }, [editId]);
+
+  // Pré-vincular à campanha quando criando um novo personagem
+  useEffect(() => {
+    if (campaignId && !editId) {
+      set('campaign_id', campaignId);
+    }
+  }, [campaignId, editId]);
 
   const set = (field: keyof FormState, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
@@ -207,6 +221,49 @@ export default function FormScreen({ editId, onDone }: Props) {
           ))}
         </div>
       </CollapsibleSection>
+
+      {/* CAMPANHA */}
+      {(myCampaigns.length > 0 || form.campaign_id) && (
+        <CollapsibleSection title="Campanha">
+          <div className="frow c2">
+            <div className="fg">
+              <label>Vincular à Campanha</label>
+              {campaignId ? (
+                <input
+                  type="text"
+                  readOnly
+                  value={myCampaigns.find(c => c.id === campaignId)?.nome ?? campaignId}
+                  style={{ color: 'var(--accent)', cursor: 'default' }}
+                />
+              ) : (
+                <select
+                  value={form.campaign_id || ''}
+                  onChange={e => set('campaign_id', e.target.value || undefined)}
+                >
+                  <option value="">Nenhuma</option>
+                  {myCampaigns.filter(c => c.meu_status === 'aprovado').map(c => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                  {form.campaign_id && !myCampaigns.find(c => c.id === form.campaign_id) && (
+                    <option value={form.campaign_id}>Campanha vinculada</option>
+                  )}
+                </select>
+              )}
+            </div>
+            {(form.campaign_id || campaignId) && (
+              <div className="fg">
+                <label>Personagem Privado</label>
+                <div
+                  className={`chk-toggle${form.privado ? ' active' : ''}`}
+                  onClick={() => set('privado', !form.privado)}
+                >
+                  {form.privado ? 'Sim (só o Mestre vê)' : '—'}
+                </div>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* IDENTIDADE */}
       <CollapsibleSection title="Identidade">

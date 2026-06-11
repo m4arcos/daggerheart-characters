@@ -5,14 +5,16 @@ import { CLS } from '../constants/cls';
 import Modal from '../components/Modal';
 import { api } from '../api';
 import { AdminUser } from '../types/auth';
+import { Campaign } from '../types/campaign';
 
 interface Props {
   onNew: () => void;
   onEdit: (id: string) => void;
   onSession: (id: string) => void;
+  onCampaign: (id: string) => void;
 }
 
-export default function ListScreen({ onNew, onEdit, onSession }: Props) {
+export default function ListScreen({ onNew, onEdit, onSession, onCampaign }: Props) {
   const chars = useCharStore(s => s.chars);
   const charOwners = useCharStore(s => s.charOwners);
   const deleteChar = useCharStore(s => s.deleteChar);
@@ -31,6 +33,11 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
   const [newSenha, setNewSenha] = useState('');
   const [createError, setCreateError] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
+
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  useEffect(() => {
+    api.campaigns.list().then(setCampaigns).catch(() => setCampaigns([]));
+  }, []);
 
   // Editar usuário
   const [editUserId, setEditUserId] = useState<string | null>(null);
@@ -243,6 +250,43 @@ export default function ListScreen({ onNew, onEdit, onSession }: Props) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {campaigns.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: '.65rem', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+              Minhas Campanhas
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {campaigns.map(cp => (
+              <div
+                key={cp.id}
+                onClick={() => onCampaign(cp.id)}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 14px', cursor: 'pointer', minWidth: 160, flex: '1 1 160px', maxWidth: 260, transition: 'border-color .15s' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 3 }}>
+                  <div style={{ fontWeight: 600, fontSize: '.92rem', color: 'var(--text)' }}>{cp.nome}</div>
+                  {cp.total_pendentes > 0 && (
+                    <span style={{ background: 'var(--hope)', color: '#12111a', borderRadius: 10, padding: '1px 7px', fontSize: '.7rem', fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>
+                      {cp.total_pendentes} pendente{cp.total_pendentes !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '.75rem', color: 'var(--text-dim)', marginBottom: 6 }}>
+                  {cp.total_membros} membro{cp.total_membros !== 1 ? 's' : ''}
+                  {' · '}
+                  <span style={{ color: cp.meu_status === 'pendente' ? 'var(--hope)' : cp.criador_id === user?.userId ? 'var(--accent)' : 'var(--ok)' }}>
+                    {cp.criador_id === user?.userId ? 'Mestre' : cp.meu_status === 'aprovado' ? 'Jogador' : 'Pendente'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

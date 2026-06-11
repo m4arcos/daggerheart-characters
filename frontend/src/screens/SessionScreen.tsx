@@ -10,20 +10,25 @@ import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
 interface Props {
   charId: string;
   onEdit: (id: string) => void;
+  readOnly?: boolean;
+  charData?: Character;
+  ownerNome?: string;
 }
 
-export default function SessionScreen({ charId, onEdit }: Props) {
+export default function SessionScreen({ charId, onEdit, readOnly = false, charData, ownerNome }: Props) {
   const chars = useCharStore(s => s.chars);
   const patchChar = useCharStore(s => s.patchChar);
   const showNotif = useCharStore(s => s.showNotif);
 
-  const c = chars.find(x => x.id === charId);
+  const c = charData ?? chars.find(x => x.id === charId);
+  const patch = readOnly ? (_p: Partial<Character>) => {} : (p: Partial<Character>) => patchChar(charId, p);
   const [newInvNome, setNewInvNome] = useState('');
   const [newInvQtd, setNewInvQtd] = useState(1);
   const [newInvDesc, setNewInvDesc] = useState('');
   const [swapOpen, setSwapOpen] = useState<null | 'principal' | 'secundaria'>(null);
   const [allSelectedCards, setAllSelectedCards] = useState<Card[]>([]);
   const [multiSubclasseCard, setMultiSubclasseCard] = useState<Card | null>(null);
+  const [campaignNome, setCampaignNome] = useState<string | null>(null);
 
   const cartasKey = (c?.cartasDominio ?? []).join(',');
   useEffect(() => {
@@ -40,6 +45,14 @@ export default function SessionScreen({ charId, onEdit }: Props) {
           .sort((a, b) => (a.nivel_dominio ?? 0) - (b.nivel_dominio ?? 0)));
       });
   }, [c?.id, cartasKey, c?.multiEnabled, c?.multiDom]);
+
+  useEffect(() => {
+    if (c?.campaign_id) {
+      api.campaigns.get(c.campaign_id).then(cp => setCampaignNome(cp.nome)).catch(() => setCampaignNome(null));
+    } else {
+      setCampaignNome(null);
+    }
+  }, [c?.campaign_id]);
 
   const multiKey = `${c?.multiEnabled}-${c?.multiCls}-${c?.multiSubclasse}`;
   useEffect(() => {
@@ -62,8 +75,6 @@ export default function SessionScreen({ charId, onEdit }: Props) {
   const cartasAtivas = c.cartasAtivas ?? [];
   const naMAo = allSelectedCards.filter(card => cartasAtivas.includes(card.num));
   const reserva = allSelectedCards.filter(card => !cartasAtivas.includes(card.num));
-
-  const patch = (p: Partial<Character>) => patchChar(c.id, p);
 
   function doSwap(activeSlot: 'principal' | 'secundaria', invSlot: 1 | 2) {
     const aP = activeSlot === 'principal' ? 'wp' : 'ws';
@@ -134,6 +145,11 @@ export default function SessionScreen({ charId, onEdit }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
               <div>
                 <div className="char-hdr-name">{c.nome}</div>
+                {ownerNome && (
+                  <div style={{ fontSize: '.72rem', color: 'var(--text-dim)', marginBottom: 4 }}>
+                    Jogador: <strong style={{ color: 'var(--text)' }}>{ownerNome}</strong>
+                  </div>
+                )}
                 <div className="char-hdr-meta">
                   <span><strong>{cls.nome}</strong>{c.subclasse ? ` · ${c.subclasse}` : ''}</span>
                   <span>Nível <strong>{c.nivel}</strong> <span style={{ color: 'var(--border)' }}>·</span> <strong>{tierFromLevel(c.nivel)}</strong></span>
@@ -144,9 +160,17 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                       {c.multiDom ? ` · ${c.multiDom}` : ''}
                     </span>
                   )}
+                  {campaignNome && (
+                    <span style={{ color: 'var(--accent)' }}>
+                      ⚔ Campanha: <strong>{campaignNome}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => onEdit(c.id)}>✏ Editar</button>
+              {readOnly
+                ? <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '3px 8px', flexShrink: 0 }}>👁 Leitura</span>
+                : <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => onEdit(c.id)}>✏ Editar</button>
+              }
             </div>
           </div>
 
@@ -168,20 +192,20 @@ export default function SessionScreen({ charId, onEdit }: Props) {
               <TrackBoxes
                 label="Pontos de Vida" type="hp"
                 max={c.pvMax} current={c.pvAtual ?? c.pvMax}
-                onToggle={i => toggleBox('pvAtual', c.pvMax, i)}
-                testIdPrefix="pv"
+                onToggle={readOnly ? () => {} : i => toggleBox('pvAtual', c.pvMax, i)}
+                readOnly={readOnly} testIdPrefix="pv"
               />
-              <TempRow label="PV Temporário" value={c.pvTemp || 0} onChange={v => patch({ pvTemp: v })} />
+              {!readOnly && <TempRow label="PV Temporário" value={c.pvTemp || 0} onChange={v => patch({ pvTemp: v })} />}
 
               <div style={{ marginTop: 10 }}>
                 <TrackBoxes
                   label="Pontos de Fadiga" type="fp"
                   max={c.pfMax} current={c.pfAtual ?? c.pfMax}
-                  onToggle={i => toggleBox('pfAtual', c.pfMax, i)}
-                  testIdPrefix="pf"
+                  onToggle={readOnly ? () => {} : i => toggleBox('pfAtual', c.pfMax, i)}
+                  readOnly={readOnly} testIdPrefix="pf"
                 />
               </div>
-              <TempRow label="PF Temporário" value={c.pfTemp || 0} onChange={v => patch({ pfTemp: v })} />
+              {!readOnly && <TempRow label="PF Temporário" value={c.pfTemp || 0} onChange={v => patch({ pfTemp: v })} />}
             </div>
           </div>
 
@@ -192,10 +216,11 @@ export default function SessionScreen({ charId, onEdit }: Props) {
               <div className="gems">
                 {Array.from({ length: 6 }, (_, i) => (
                   <div key={i} className={`gem${i < (c.esperanca ?? 6) ? ' on' : ''}`}
-                       onClick={() => toggleHope(i)} data-testid="hope-gem">✦</div>
+                       style={readOnly ? { cursor: 'default' } : undefined}
+                       onClick={readOnly ? undefined : () => toggleHope(i)} data-testid="hope-gem">✦</div>
                 ))}
               </div>
-              <TempRow label="Esperança Temporária" value={c.hopeTemp || 0} onChange={v => patch({ hopeTemp: v })} />
+              {!readOnly && <TempRow label="Esperança Temporária" value={c.hopeTemp || 0} onChange={v => patch({ hopeTemp: v })} />}
               <div className="hope-ab" style={{ marginTop: 8 }}>{cls.ha}</div>
             </div>
           </div>
@@ -253,7 +278,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                       <div className="gold-lbl">{labels[i]}</div>
                       <NumInput
                         className="gold-in" inputMode="numeric" min={0} step={1} value={c[field] || 0}
-                        onChange={v => patch({ [field]: v })}
+                        onChange={v => patch({ [field]: v })} disabled={readOnly}
                       />
                     </div>
                   );
@@ -301,7 +326,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                       ? <WeaponDisplay type="Principal" nome={c.wpNome} attr={c.wpAttr} dados={c.wpDados} hab={c.wpHab} maos={c.wpMaos} prof={c.prof} />
                       : <WeaponDisplay type="Secundária" nome={c.wsNome} attr={c.wsAttr} dados={c.wsDados} hab={c.wsHab} maos={c.wsMaos} prof={c.prof} />
                     }
-                    {invOptions.length > 0 && (
+                    {invOptions.length > 0 && !readOnly && (
                       <div style={{ marginTop: 4 }}>
                         <button
                           className="btn btn-ghost btn-sm"
@@ -350,10 +375,10 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                   <TrackBoxes
                     label="Pontos de Armadura" type="ar"
                     max={c.armBase} current={c.paAtual ?? c.armBase}
-                    onToggle={i => toggleBox('paAtual', c.armBase, i)}
-                    testIdPrefix="pa"
+                    onToggle={readOnly ? () => {} : i => toggleBox('paAtual', c.armBase, i)}
+                    readOnly={readOnly} testIdPrefix="pa"
                   />
-                  <TempRow label="PA Temporário" value={c.paTemp || 0} onChange={v => patch({ paTemp: v })} />
+                  {!readOnly && <TempRow label="PA Temporário" value={c.paTemp || 0} onChange={v => patch({ paTemp: v })} />}
                 </>
               )}
             </div>
@@ -374,12 +399,16 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                         </div>
                         {item.desc && <div className="inv-item-desc">{item.desc}</div>}
                       </div>
-                      <NumInput
-                        inputMode="numeric" min={0} step={1} value={item.qtd}
-                        style={{ width: 52, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', padding: '4px 6px', fontSize: '.82rem', textAlign: 'center', flexShrink: 0 }}
-                        onChange={v => updateInvQtd(idx, v)}
-                      />
-                      <button className="inv-del-btn" onClick={() => removeInv(idx)}>✕</button>
+                      {!readOnly && (
+                        <>
+                          <NumInput
+                            inputMode="numeric" min={0} step={1} value={item.qtd}
+                            style={{ width: 52, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', padding: '4px 6px', fontSize: '.82rem', textAlign: 'center', flexShrink: 0 }}
+                            onChange={v => updateInvQtd(idx, v)}
+                          />
+                          <button className="inv-del-btn" onClick={() => removeInv(idx)}>✕</button>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -387,7 +416,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
               {c.wi1Nome && <WeaponDisplay type={`Inventário — ${c.wi1Tipo || ''}`} nome={c.wi1Nome} attr={c.wi1Attr} dados={c.wi1Dados} hab={c.wi1Hab} maos={c.wi1Maos} prof={c.prof} />}
               {c.wi2Nome && <WeaponDisplay type={`Inventário — ${c.wi2Tipo || ''}`} nome={c.wi2Nome} attr={c.wi2Attr} dados={c.wi2Dados} hab={c.wi2Hab} maos={c.wi2Maos} prof={c.prof} />}
 
-              <div className="inv-add-form">
+              {!readOnly && <div className="inv-add-form">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 10, marginBottom: 8 }}>
                   <div className="fg"><label>Nome do item</label>
                     <input type="text" value={newInvNome} placeholder="Ex: Poção de Vida…" onChange={e => setNewInvNome(e.target.value)} />
@@ -402,7 +431,7 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button className="btn btn-primary btn-sm" onClick={addInv}>+ Adicionar Item</button>
                 </div>
-              </div>
+              </div>}
             </div>
           </div>
 
@@ -468,11 +497,11 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                         <div className="ca-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <span>{card.nome}</span>
                           <span className="ca-name-meta">Nv.{card.nivel_dominio}{(card.custo ?? 0) > 0 ? ` · ${card.custo}⚡ PF` : ''} · {card.card_tipo}</span>
-                          <button
+                          {!readOnly && <button
                             className="btn btn-ghost btn-sm"
                             style={{ padding: '2px 8px', fontSize: '.72rem' }}
                             onClick={() => toggleCartaAtiva(card.num)}
-                          >→ Reserva</button>
+                          >→ Reserva</button>}
                         </div>
                         <div className="ca-desc">{card.descricao}</div>
                       </div>
@@ -492,11 +521,11 @@ export default function SessionScreen({ charId, onEdit }: Props) {
                           </button>
                           <span>{card.nome}</span>
                           <span className="ca-name-meta">Nv.{card.nivel_dominio}{(card.custo ?? 0) > 0 ? ` · ${card.custo}⚡ PF` : ''}</span>
-                          <button
+                          {!readOnly && <button
                             className="btn btn-primary btn-sm"
                             style={{ padding: '2px 8px', fontSize: '.72rem', opacity: 1 }}
                             onClick={() => toggleCartaAtiva(card.num)}
-                          >→ Na mão</button>
+                          >→ Na mão</button>}
                         </div>
                         {expandedCards.has(card.num) && (
                           <div className="ca-desc" style={{ opacity: 1 }}>{card.descricao}</div>
@@ -516,10 +545,10 @@ export default function SessionScreen({ charId, onEdit }: Props) {
 
 /* ── Sub-components ── */
 
-function TrackBoxes({ label, type, max, current, onToggle, testIdPrefix }: {
+function TrackBoxes({ label, type, max, current, onToggle, testIdPrefix, readOnly }: {
   label: string; type: 'hp' | 'fp' | 'ar';
   max: number; current: number; onToggle: (i: number) => void;
-  testIdPrefix?: string;
+  testIdPrefix?: string; readOnly?: boolean;
 }) {
   const marked = max - current;
   return (
@@ -531,6 +560,7 @@ function TrackBoxes({ label, type, max, current, onToggle, testIdPrefix }: {
       <div className="boxes">
         {Array.from({ length: max }, (_, i) => (
           <div key={i} className={`box ${type}${i < marked ? ' on' : ''}`}
+               style={readOnly ? { cursor: 'default' } : undefined}
                onClick={() => onToggle(i)}
                {...(testIdPrefix ? { 'data-testid': `${testIdPrefix}-box` } : {})} />
         ))}

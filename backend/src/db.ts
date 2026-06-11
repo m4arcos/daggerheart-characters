@@ -56,6 +56,26 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS campaigns (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    codigo TEXT NOT NULL UNIQUE,
+    criador_id TEXT NOT NULL,
+    created_at INTEGER DEFAULT (unixepoch())
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS campaign_members (
+    campaign_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendente',
+    joined_at INTEGER DEFAULT (unixepoch()),
+    PRIMARY KEY (campaign_id, user_id)
+  )
+`);
+
 // Migration: add user_id to characters if it doesn't exist yet
 try {
   db.exec('ALTER TABLE characters ADD COLUMN user_id TEXT');
@@ -66,10 +86,17 @@ try {
   db.exec('ALTER TABLE users ADD COLUMN last_login INTEGER');
 } catch (_) { /* column already exists */ }
 
+// Migration: add campaign_id to characters if it doesn't exist yet
+try {
+  db.exec('ALTER TABLE characters ADD COLUMN campaign_id TEXT');
+} catch (_) { /* column already exists */ }
+
 export function clearAll(): void {
   db.exec('DELETE FROM characters');
   db.exec('DELETE FROM cards');
   db.exec('DELETE FROM users');
+  db.exec('DELETE FROM campaigns');
+  db.exec('DELETE FROM campaign_members');
 }
 
 export default db;

@@ -23,6 +23,7 @@ interface AuthStore {
 
   login: (email: string, senha: string) => Promise<void>;
   setPassword: (novaSenha: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
   updateAuth: (token: string, user: AuthUser) => void;
@@ -53,6 +54,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setPassword: async (novaSenha) => {
     const data = await api.auth.setPassword(novaSenha);
     get().updateAuth(data.token, data.user);
+  },
+
+  refreshUser: async () => {
+    try {
+      const data = await api.auth.me();
+      get().updateAuth(data.token, data.user);
+    } catch {
+      get().logout();
+    }
   },
 
   logout: () => {

@@ -4,6 +4,7 @@ import { generateToken, hashPassword } from '../src/auth';
 
 export const TEST_USER_ID = 'test-user-id';
 export const TEST_ADMIN_ID = 'test-admin-id';
+export const OTHER_USER_ID = 'other-user-id';
 
 export const testToken = generateToken({
   userId: TEST_USER_ID,
@@ -37,4 +38,7 @@ beforeEach(() => {
   db.prepare(
     'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES (?, ?, ?, ?, 1, 1)'
   ).run(TEST_ADMIN_ID, 'Admin Test', 'admin@example.com', hashPassword('temp'));
+  db.prepare(
+    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa) VALUES (?, ?, ?, ?, 1)'
+  ).run(OTHER_USER_ID, 'Other User', 'other@test.com', hashPassword('temp'));
 });
