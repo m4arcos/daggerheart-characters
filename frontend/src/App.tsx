@@ -27,6 +27,7 @@ export default function App() {
 
   const isAuthenticated = !!user;
   const requiresPasswordChange = user?.requiresPasswordChange ?? false;
+  const [campaignsAutoCreate, setCampaignsAutoCreate] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) refreshUser();
@@ -50,7 +51,6 @@ export default function App() {
   const goForm = (id?: string) => { setEditId(id ?? null); setFormCampaignId(null); setScreen('form'); };
   const goSession = (id: string) => { setSessionId(id); setScreen('session'); };
   const goCards = () => setScreen('cards');
-  const [campaignsAutoCreate, setCampaignsAutoCreate] = useState(false);
   const goCampaigns = (autoCreate = false) => { setCampaignsAutoCreate(autoCreate); setScreen('campaigns'); };
   const goCampaign = (id: string) => { setCurrentCampaignId(id); setScreen('campaign'); };
   const goFormFromCampaign = (campId: string) => { setFormCampaignId(campId); setEditId(null); setScreen('form'); };

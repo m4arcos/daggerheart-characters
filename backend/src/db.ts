@@ -1,102 +1,85 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import pg from 'pg';
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/daggerheart.db');
+// Parse BIGINT (OID 20) as JavaScript number instead of string
+pg.types.setTypeParser(20, (val: string) => parseInt(val, 10));
 
-if (dbPath !== ':memory:') {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/daggerheart';
+
+export const pool = new pg.Pool({ connectionString: DATABASE_URL });
+
+export async function initDb(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS characters (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      user_id TEXT,
+      campaign_id TEXT,
+      created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT,
+      updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cards (
+      id SERIAL PRIMARY KEY,
+      num INTEGER NOT NULL UNIQUE,
+      tipo TEXT NOT NULL,
+      nome TEXT NOT NULL,
+      descricao TEXT NOT NULL,
+      dominio_key TEXT,
+      subclasse_nome TEXT,
+      classe TEXT,
+      nome_classe TEXT,
+      nivel_subclasse TEXT,
+      atributo_conjuracao TEXT,
+      nivel_dominio INTEGER,
+      custo INTEGER,
+      card_tipo TEXT
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      senha_hash TEXT,
+      senha_temp TEXT NOT NULL,
+      temp_ativa BOOLEAN DEFAULT TRUE,
+      is_admin BOOLEAN DEFAULT FALSE,
+      last_login BIGINT,
+      created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT,
+      updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      codigo TEXT NOT NULL UNIQUE,
+      criador_id TEXT NOT NULL,
+      created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS campaign_members (
+      campaign_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pendente',
+      joined_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT,
+      PRIMARY KEY (campaign_id, user_id)
+    )
+  `);
 }
 
-const db = new Database(dbPath);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS characters (
-    id TEXT PRIMARY KEY,
-    data TEXT NOT NULL,
-    user_id TEXT,
-    created_at INTEGER DEFAULT (unixepoch()),
-    updated_at INTEGER DEFAULT (unixepoch())
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS cards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    num INTEGER NOT NULL UNIQUE,
-    tipo TEXT NOT NULL,
-    nome TEXT NOT NULL,
-    descricao TEXT NOT NULL,
-    dominio_key TEXT,
-    subclasse_nome TEXT,
-    classe TEXT,
-    nome_classe TEXT,
-    nivel_subclasse TEXT,
-    atributo_conjuracao TEXT,
-    nivel_dominio INTEGER,
-    custo INTEGER,
-    card_tipo TEXT
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    senha_hash TEXT,
-    senha_temp TEXT NOT NULL,
-    temp_ativa INTEGER DEFAULT 1,
-    is_admin INTEGER DEFAULT 0,
-    created_at INTEGER DEFAULT (unixepoch()),
-    updated_at INTEGER DEFAULT (unixepoch())
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS campaigns (
-    id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    codigo TEXT NOT NULL UNIQUE,
-    criador_id TEXT NOT NULL,
-    created_at INTEGER DEFAULT (unixepoch())
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS campaign_members (
-    campaign_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pendente',
-    joined_at INTEGER DEFAULT (unixepoch()),
-    PRIMARY KEY (campaign_id, user_id)
-  )
-`);
-
-// Migration: add user_id to characters if it doesn't exist yet
-try {
-  db.exec('ALTER TABLE characters ADD COLUMN user_id TEXT');
-} catch (_) { /* column already exists */ }
-
-// Migration: add last_login to users if it doesn't exist yet
-try {
-  db.exec('ALTER TABLE users ADD COLUMN last_login INTEGER');
-} catch (_) { /* column already exists */ }
-
-// Migration: add campaign_id to characters if it doesn't exist yet
-try {
-  db.exec('ALTER TABLE characters ADD COLUMN campaign_id TEXT');
-} catch (_) { /* column already exists */ }
-
-export function clearAll(): void {
-  db.exec('DELETE FROM characters');
-  db.exec('DELETE FROM cards');
-  db.exec('DELETE FROM users');
-  db.exec('DELETE FROM campaigns');
-  db.exec('DELETE FROM campaign_members');
+export async function clearAll(): Promise<void> {
+  await pool.query('DELETE FROM campaign_members');
+  await pool.query('DELETE FROM characters');
+  await pool.query('DELETE FROM cards');
+  await pool.query('DELETE FROM campaigns');
+  await pool.query('DELETE FROM users');
 }
 
-export default db;
+export default pool;

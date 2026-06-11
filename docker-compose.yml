@@ -1,17 +1,35 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: daggerheart
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: ./backend
     ports:
       - "3001:3001"
     volumes:
       - ./backend/src:/app/src
-      - ./backend/data:/app/data
       - ./backend/entrypoint.sh:/app/entrypoint.sh
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - DB_PATH=/app/data/daggerheart.db
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/daggerheart
     command: sh /app/entrypoint.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -23,3 +41,6 @@ services:
       - ./frontend/index.html:/app/index.html
     depends_on:
       - backend
+
+volumes:
+  pgdata:

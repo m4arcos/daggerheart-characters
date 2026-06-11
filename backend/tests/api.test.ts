@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/index';
-import db from '../src/db';
+import pool from '../src/db';
 import { hashPassword } from '../src/auth';
 import { testToken, adminToken, otherToken, TEST_USER_ID, OTHER_USER_ID } from './setup';
 
@@ -37,14 +37,15 @@ const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 // ──────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/auth/login', () => {
-  function createUser(id: string, email: string, senhaTmp: string, isAdmin = 0) {
-    db.prepare(
-      'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES (?, ?, ?, ?, 1, ?)'
-    ).run(id, 'Test', email, hashPassword(senhaTmp), isAdmin);
+  async function createUser(id: string, email: string, senhaTmp: string, isAdmin = false) {
+    await pool.query(
+      'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES ($1, $2, $3, $4, TRUE, $5)',
+      [id, 'Test', email, hashPassword(senhaTmp), isAdmin]
+    );
   }
 
   it('retorna token com requiresPasswordChange=true ao usar senha temporária', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
     const res = await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
     expect(res.status).toBe(200);
     expect(res.body.token).toBeDefined();
@@ -52,17 +53,18 @@ describe('POST /api/auth/login', () => {
   });
 
   it('retorna token com requiresPasswordChange=false após senha definitiva', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
-    db.prepare(
-      "UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE email = 'user@test.com'"
-    ).run(hashPassword('SenhaDefinitiva1!'));
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
+    await pool.query(
+      "UPDATE users SET senha_hash = $1, temp_ativa = FALSE WHERE email = 'user@test.com'",
+      [hashPassword('SenhaDefinitiva1!')]
+    );
     const res = await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'SenhaDefinitiva1!' });
     expect(res.status).toBe(200);
     expect(res.body.user.requiresPasswordChange).toBe(false);
   });
 
   it('retorna 401 para senha errada', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
     const res = await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'errada' });
     expect(res.status).toBe(401);
   });
@@ -78,24 +80,25 @@ describe('POST /api/auth/login', () => {
   });
 
   it('retorna 401 quando senha temporária foi desativada', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
-    db.prepare(
-      "UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE email = 'user@test.com'"
-    ).run(hashPassword('SenhaDefinitiva1!'));
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
+    await pool.query(
+      "UPDATE users SET senha_hash = $1, temp_ativa = FALSE WHERE email = 'user@test.com'",
+      [hashPassword('SenhaDefinitiva1!')]
+    );
     const res = await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
     expect(res.status).toBe(401);
   });
 
   it('grava last_login no login bem-sucedido', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
     const before = Math.floor(Date.now() / 1000);
     await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
-    const row = db.prepare('SELECT last_login FROM users WHERE email = ?').get('user@test.com') as { last_login: number };
-    expect(row.last_login).toBeGreaterThanOrEqual(before);
+    const { rows } = await pool.query('SELECT last_login FROM users WHERE email = $1', ['user@test.com']);
+    expect(rows[0].last_login).toBeGreaterThanOrEqual(before);
   });
 
   it('last_login aparece na listagem de admin', async () => {
-    createUser('u1', 'user@test.com', 'senhaTemp1');
+    await createUser('u1', 'user@test.com', 'senhaTemp1');
     await request(app).post('/api/auth/login').send({ email: 'user@test.com', senha: 'senhaTemp1' });
     const res = await request(app).get('/api/admin/users').set(auth(adminToken));
     const found = res.body.find((u: { email: string }) => u.email === 'user@test.com');
@@ -130,8 +133,10 @@ describe('POST /api/auth/set-password', () => {
 
 describe('GET /api/auth/me', () => {
   it('retorna requiresPasswordChange=false quando temp_ativa=0', async () => {
-    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
-      .run(hashPassword('DefPass'), TEST_USER_ID);
+    await pool.query(
+      'UPDATE users SET senha_hash = $1, temp_ativa = FALSE WHERE id = $2',
+      [hashPassword('DefPass'), TEST_USER_ID]
+    );
     const res = await request(app).get('/api/auth/me').set(auth(testToken));
     expect(res.status).toBe(200);
     expect(res.body.token).toBeDefined();
@@ -219,26 +224,33 @@ describe('PUT /api/admin/users/:id', () => {
     const res = await request(app).put(`/api/admin/users/${id}`).set(auth(adminToken))
       .send({ nome: 'Reset', email: 'reset@test.com', senhaTmp: 'NovaSenhaTemp' });
     expect(res.status).toBe(200);
-    expect(res.body.temp_ativa).toBe(1);
+    expect(res.body.temp_ativa).toBe(true);
   });
 
   it('reset de senha limpa senha_hash para forçar uso da temp', async () => {
     const id = await createAndGetId('hashclear@test.com');
     // simula usuário que já definiu senha definitiva
-    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
-      .run(hashPassword('SenhaAntigaDefinitiva'), id);
+    await pool.query(
+      'UPDATE users SET senha_hash = $1, temp_ativa = FALSE WHERE id = $2',
+      [hashPassword('SenhaAntigaDefinitiva'), id]
+    );
     // admin reseta a senha
     await request(app).put(`/api/admin/users/${id}`).set(auth(adminToken))
       .send({ nome: 'HashClear', email: 'hashclear@test.com', senhaTmp: 'NovaTemporal' });
-    const user = db.prepare('SELECT senha_hash, temp_ativa FROM users WHERE id = ?').get(id) as { senha_hash: string | null; temp_ativa: number };
+    const { rows } = await pool.query(
+      'SELECT senha_hash, temp_ativa FROM users WHERE id = $1', [id]
+    );
+    const user = rows[0] as { senha_hash: string | null; temp_ativa: boolean };
     expect(user.senha_hash).toBeNull();
-    expect(user.temp_ativa).toBe(1);
+    expect(user.temp_ativa).toBe(true);
   });
 
   it('login com senha antiga falha após reset; login com nova temp retorna requiresPasswordChange=true', async () => {
     const id = await createAndGetId('forcechange@test.com');
-    db.prepare('UPDATE users SET senha_hash = ?, temp_ativa = 0 WHERE id = ?')
-      .run(hashPassword('SenhaDefinitiva'), id);
+    await pool.query(
+      'UPDATE users SET senha_hash = $1, temp_ativa = FALSE WHERE id = $2',
+      [hashPassword('SenhaDefinitiva'), id]
+    );
     await request(app).put(`/api/admin/users/${id}`).set(auth(adminToken))
       .send({ nome: 'ForceChange', email: 'forcechange@test.com', senhaTmp: 'NovaTemp123' });
     // login com senha antiga deve falhar
@@ -512,18 +524,22 @@ describe('DELETE /api/characters/:id', () => {
 
 type PartialCard = { num: number; tipo: string; nome: string; descricao: string; [k: string]: unknown }
 
-function insertCard(card: PartialCard) {
-  db.prepare(`
-    INSERT INTO cards (num, tipo, nome, descricao, dominio_key, subclasse_nome, classe, nome_classe,
-      nivel_subclasse, atributo_conjuracao, nivel_dominio, custo, card_tipo)
-    VALUES (@num, @tipo, @nome, @descricao, @dominio_key, @subclasse_nome, @classe, @nome_classe,
-      @nivel_subclasse, @atributo_conjuracao, @nivel_dominio, @custo, @card_tipo)
-  `).run({
+async function insertCard(card: PartialCard) {
+  const row = {
     dominio_key: null, subclasse_nome: null, classe: null, nome_classe: null,
     nivel_subclasse: null, atributo_conjuracao: null, nivel_dominio: null,
     custo: null, card_tipo: null,
     ...card,
-  });
+  };
+  await pool.query(`
+    INSERT INTO cards (num, tipo, nome, descricao, dominio_key, subclasse_nome, classe, nome_classe,
+      nivel_subclasse, atributo_conjuracao, nivel_dominio, custo, card_tipo)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  `, [
+    row.num, row.tipo, row.nome, row.descricao, row.dominio_key, row.subclasse_nome,
+    row.classe, row.nome_classe, row.nivel_subclasse, row.atributo_conjuracao,
+    row.nivel_dominio, row.custo, row.card_tipo,
+  ]);
 }
 
 describe('GET /api/cards', () => {
@@ -539,8 +555,8 @@ describe('GET /api/cards', () => {
   });
 
   it('retorna cartas em ordem de num', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Desc', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'Desc2', dominio_key: 'graca', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Desc', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'Desc2', dominio_key: 'graca', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
 
     const res = await request(app).get('/api/cards').set(auth(testToken));
     expect(res.status).toBe(200);
@@ -550,8 +566,8 @@ describe('GET /api/cards', () => {
   });
 
   it('filtra por tipo', async () => {
-    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
-    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
 
     const res = await request(app).get('/api/cards?tipo=dominio').set(auth(testToken));
     expect(res.status).toBe(200);
@@ -560,8 +576,8 @@ describe('GET /api/cards', () => {
   });
 
   it('filtra por dominio_key', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'Carta Arcano', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 106, tipo: 'dominio', nome: 'Carta Lamina', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'Carta Arcano', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'Carta Lamina', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
 
     const res = await request(app).get('/api/cards?dominio_key=arcano').set(auth(testToken));
     expect(res.body).toHaveLength(1);
@@ -569,8 +585,8 @@ describe('GET /api/cards', () => {
   });
 
   it('busca por texto em nome', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Talismã mágico', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 106, tipo: 'dominio', nome: 'Fraternidade', descricao: 'Outra descrição', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Talismã mágico', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'Fraternidade', descricao: 'Outra descrição', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
 
     const res = await request(app).get('/api/cards?q=R%C3%BAnica').set(auth(testToken));
     expect(res.body).toHaveLength(1);
@@ -578,8 +594,8 @@ describe('GET /api/cards', () => {
   });
 
   it('busca por texto em descricao', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'Possui talismã único', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'Descrição comum', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'Possui talismã único', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'Descrição comum', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
 
     const res = await request(app).get(`/api/cards?q=${encodeURIComponent('talismã')}`).set(auth(testToken));
     expect(res.body).toHaveLength(1);
@@ -587,8 +603,8 @@ describe('GET /api/cards', () => {
   });
 
   it('filtra por card_tipo', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
 
     const res = await request(app).get('/api/cards?card_tipo=Talento').set(auth(testToken));
     expect(res.body).toHaveLength(1);
@@ -596,8 +612,8 @@ describe('GET /api/cards', () => {
   });
 
   it('filtra por classe', async () => {
-    insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
-    insertCard({ num: 13, tipo: 'subclasse', nome: 'Baluarte', descricao: 'D', subclasse_nome: 'Baluarte', classe: 'guardiao', nome_classe: 'Guardião', nivel_subclasse: 'Fundamental' });
+    await insertCard({ num: 1, tipo: 'subclasse', nome: 'Trovador', descricao: 'D', subclasse_nome: 'Trovador', classe: 'bardo', nome_classe: 'Bardo', nivel_subclasse: 'Fundamental' });
+    await insertCard({ num: 13, tipo: 'subclasse', nome: 'Baluarte', descricao: 'D', subclasse_nome: 'Baluarte', classe: 'guardiao', nome_classe: 'Guardião', nivel_subclasse: 'Fundamental' });
 
     const res = await request(app).get('/api/cards?classe=bardo').set(auth(testToken));
     expect(res.body).toHaveLength(1);
@@ -605,9 +621,9 @@ describe('GET /api/cards', () => {
   });
 
   it('combina múltiplos filtros', async () => {
-    insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
-    insertCard({ num: 83, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
-    insertCard({ num: 106, tipo: 'dominio', nome: 'C', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 83, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'C', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
 
     const res = await request(app).get(`/api/cards?dominio_key=arcano&card_tipo=${encodeURIComponent('Feitiço')}`).set(auth(testToken));
     expect(res.body).toHaveLength(1);

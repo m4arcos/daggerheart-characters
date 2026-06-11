@@ -9,51 +9,8 @@
  *   Domínios:        082–270 (9 domínios × 21 cartas)
  */
 
-import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
-import path from 'path';
-import fs from 'fs';
-
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/daggerheart.db');
-
-if (!fs.existsSync(path.dirname(dbPath))) {
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-}
-
-const db = new Database(dbPath);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS cards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    num INTEGER NOT NULL UNIQUE,
-    tipo TEXT NOT NULL,
-    nome TEXT NOT NULL,
-    descricao TEXT NOT NULL,
-    dominio_key TEXT,
-    subclasse_nome TEXT,
-    classe TEXT,
-    nome_classe TEXT,
-    nivel_subclasse TEXT,
-    atributo_conjuracao TEXT,
-    nivel_dominio INTEGER,
-    custo INTEGER,
-    card_tipo TEXT
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    senha_hash TEXT,
-    senha_temp TEXT NOT NULL,
-    temp_ativa INTEGER DEFAULT 1,
-    is_admin INTEGER DEFAULT 0,
-    created_at INTEGER DEFAULT (unixepoch()),
-    updated_at INTEGER DEFAULT (unixepoch())
-  )
-`);
+import { pool, initDb } from './db';
 
 type CardRow = {
   num: number
@@ -71,27 +28,40 @@ type CardRow = {
   card_tipo?: string | null
 }
 
-const insert = db.prepare(`
-  INSERT OR REPLACE INTO cards
-    (num, tipo, nome, descricao, dominio_key, subclasse_nome, classe, nome_classe,
-     nivel_subclasse, atributo_conjuracao, nivel_dominio, custo, card_tipo)
-  VALUES
-    (@num, @tipo, @nome, @descricao, @dominio_key, @subclasse_nome, @classe, @nome_classe,
-     @nivel_subclasse, @atributo_conjuracao, @nivel_dominio, @custo, @card_tipo)
-`)
-
-function seed(cards: CardRow[]) {
-  const run = db.transaction((rows: CardRow[]) => {
-    for (const row of rows) {
-      insert.run({
+async function seed(cards: CardRow[]): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const raw of cards) {
+      const row = {
         dominio_key: null, subclasse_nome: null, classe: null, nome_classe: null,
         nivel_subclasse: null, atributo_conjuracao: null, nivel_dominio: null,
         custo: null, card_tipo: null,
-        ...row,
-      })
+        ...raw,
+      };
+      await client.query(`
+        INSERT INTO cards (num, tipo, nome, descricao, dominio_key, subclasse_nome, classe, nome_classe,
+          nivel_subclasse, atributo_conjuracao, nivel_dominio, custo, card_tipo)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (num) DO UPDATE SET
+          tipo = EXCLUDED.tipo, nome = EXCLUDED.nome, descricao = EXCLUDED.descricao,
+          dominio_key = EXCLUDED.dominio_key, subclasse_nome = EXCLUDED.subclasse_nome,
+          classe = EXCLUDED.classe, nome_classe = EXCLUDED.nome_classe,
+          nivel_subclasse = EXCLUDED.nivel_subclasse, atributo_conjuracao = EXCLUDED.atributo_conjuracao,
+          nivel_dominio = EXCLUDED.nivel_dominio, custo = EXCLUDED.custo, card_tipo = EXCLUDED.card_tipo
+      `, [
+        row.num, row.tipo, row.nome, row.descricao, row.dominio_key, row.subclasse_nome,
+        row.classe, row.nome_classe, row.nivel_subclasse, row.atributo_conjuracao,
+        row.nivel_dominio, row.custo, row.card_tipo,
+      ]);
     }
-  })
-  run(cards)
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 // ─── Subclasses ───────────────────────────────────────────────────────────────
@@ -2776,27 +2746,29 @@ const DOMINIOS: CardRow[] = [
 
 // ─── Executar seeder ──────────────────────────────────────────────────────────
 
-const all = [...SUBCLASSES, ...ANCESTRALIDADES, ...COMUNIDADES, ...DOMINIOS]
+async function main() {
+  await initDb();
 
-seed(all)
+  const all = [...SUBCLASSES, ...ANCESTRALIDADES, ...COMUNIDADES, ...DOMINIOS]
+  await seed(all)
+  console.log(`✓ Seeder concluído: ${SUBCLASSES.length} subclasses, ${DOMINIOS.length} domínios, ${ANCESTRALIDADES.length} ancestralidades, ${COMUNIDADES.length} comunidades.`)
+  console.log(`  Total: ${all.length} cartas inseridas/atualizadas.`)
 
-console.log(`✓ Seeder concluído: ${SUBCLASSES.length} subclasses, ${DOMINIOS.length} domínios, ${ANCESTRALIDADES.length} ancestralidades, ${COMUNIDADES.length} comunidades.`)
-console.log(`  Total: ${all.length} cartas inseridas/atualizadas.`)
+  // ─── Seed usuário admin ─────────────────────────────────────────────────────
+  const adminEmail = 'm4arcos@gmail.com'
+  const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail])
+  if (rows.length === 0) {
+    const adminId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+    await pool.query(
+      'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES ($1, $2, $3, $4, TRUE, TRUE)',
+      [adminId, 'Marcos - Admin', adminEmail, bcrypt.hashSync('adminTempDH!', 10)]
+    )
+    console.log(`✓ Usuário admin criado: ${adminEmail}`)
+  } else {
+    console.log(`  Usuário admin já existe: ${adminEmail}`)
+  }
 
-// ─── Seed usuário admin ───────────────────────────────────────────────────────
-
-function uidAdmin() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2)
+  await pool.end()
 }
 
-const adminEmail = 'm4arcos@gmail.com'
-const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get(adminEmail)
-
-if (!adminExists) {
-  db.prepare(
-    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES (?, ?, ?, ?, 1, 1)'
-  ).run(uidAdmin(), 'Marcos - Admin', adminEmail, bcrypt.hashSync('adminTempDH!', 10))
-  console.log(`✓ Usuário admin criado: ${adminEmail}`)
-} else {
-  console.log(`  Usuário admin já existe: ${adminEmail}`)
-}
+main().catch(err => { console.error(err); process.exit(1); })

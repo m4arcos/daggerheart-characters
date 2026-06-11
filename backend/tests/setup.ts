@@ -1,5 +1,5 @@
-import { beforeEach } from 'vitest';
-import db, { clearAll } from '../src/db';
+import { beforeAll, beforeEach } from 'vitest';
+import pool, { clearAll, initDb } from '../src/db';
 import { generateToken, hashPassword } from '../src/auth';
 
 export const TEST_USER_ID = 'test-user-id';
@@ -30,15 +30,22 @@ export const otherToken = generateToken({
   requiresPasswordChange: false,
 });
 
-beforeEach(() => {
-  clearAll();
-  db.prepare(
-    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa) VALUES (?, ?, ?, ?, 1)'
-  ).run(TEST_USER_ID, 'Test User', 'test@example.com', hashPassword('temp'));
-  db.prepare(
-    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES (?, ?, ?, ?, 1, 1)'
-  ).run(TEST_ADMIN_ID, 'Admin Test', 'admin@example.com', hashPassword('temp'));
-  db.prepare(
-    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa) VALUES (?, ?, ?, ?, 1)'
-  ).run(OTHER_USER_ID, 'Other User', 'other@test.com', hashPassword('temp'));
+beforeAll(async () => {
+  await initDb();
+});
+
+beforeEach(async () => {
+  await clearAll();
+  await pool.query(
+    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa) VALUES ($1, $2, $3, $4, TRUE)',
+    [TEST_USER_ID, 'Test User', 'test@example.com', hashPassword('temp')]
+  );
+  await pool.query(
+    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES ($1, $2, $3, $4, TRUE, TRUE)',
+    [TEST_ADMIN_ID, 'Admin Test', 'admin@example.com', hashPassword('temp')]
+  );
+  await pool.query(
+    'INSERT INTO users (id, nome, email, senha_temp, temp_ativa) VALUES ($1, $2, $3, $4, TRUE)',
+    [OTHER_USER_ID, 'Other User', 'other@test.com', hashPassword('temp')]
+  );
 });
