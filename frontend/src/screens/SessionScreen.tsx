@@ -10,12 +10,13 @@ import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
 interface Props {
   charId: string;
   onEdit: (id: string) => void;
+  onBackToCampaign?: () => void;
   readOnly?: boolean;
   charData?: Character;
   ownerNome?: string;
 }
 
-export default function SessionScreen({ charId, onEdit, readOnly = false, charData, ownerNome }: Props) {
+export default function SessionScreen({ charId, onEdit, onBackToCampaign, readOnly = false, charData, ownerNome }: Props) {
   const chars = useCharStore(s => s.chars);
   const patchChar = useCharStore(s => s.patchChar);
   const showNotif = useCharStore(s => s.showNotif);
@@ -142,6 +143,12 @@ export default function SessionScreen({ charId, onEdit, readOnly = false, charDa
         <div>
           {/* Character Header */}
           <div className="char-hdr">
+            {c.avatar && (
+              <div style={{ height: 120, margin: '-12px -12px 12px', overflow: 'hidden', borderRadius: 'var(--r) var(--r) 0 0', position: 'relative' }}>
+                <img src={c.avatar} alt={c.nome} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(18,17,26,.8))' }} />
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
               <div>
                 <div className="char-hdr-name">{c.nome}</div>
@@ -167,10 +174,18 @@ export default function SessionScreen({ charId, onEdit, readOnly = false, charDa
                   )}
                 </div>
               </div>
-              {readOnly
-                ? <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '3px 8px', flexShrink: 0 }}>👁 Leitura</span>
-                : <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => onEdit(c.id)}>✏ Editar</button>
-              }
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                {onBackToCampaign && (
+                  <button className="btn btn-ghost btn-sm" onClick={onBackToCampaign} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>arrow_back</span>
+                    Campanha
+                  </button>
+                )}
+                {readOnly
+                  ? <span style={{ fontSize: '.72rem', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '3px 8px' }}>👁 Leitura</span>
+                  : <button className="btn btn-ghost btn-sm" onClick={() => onEdit(c.id)}>✏ Editar</button>
+                }
+              </div>
             </div>
           </div>
 

@@ -63,6 +63,9 @@ export async function initDb(): Promise<void> {
     )
   `);
 
+  await pool.query(`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cover_image TEXT`);
+  await pool.query(`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'ativa'`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS campaign_members (
       campaign_id TEXT NOT NULL,

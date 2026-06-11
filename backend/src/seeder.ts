@@ -865,7 +865,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 83,
   tipo: 'dominio',
-  nome: "CAOS LIBERTO",
+  nome: "Caos Liberto",
   descricao: "No início da sessão, coloque um número de marcadores igual ao seu atributo de conjuração nesta carta. Faça um teste de conjuração contra um alvo distante e gaste qualquer número de marcadores para canalizar energia bruta de seu interior e liberá-la contra ele. Em um sucesso, role uma quantidade de d10 igual ao número de marcadores que gastou e cause o resultado deles como dano mágico ao alvo. Marque 1 Ponto de Fadiga para recarregar esta carta com marcadores (até uma quantidade igual ao seu atributo de conjuração). No fim de cada sessão, marcadores não utilizados são perdidos.",
   dominio_key: "arcano",
   nivel_dominio: 1,
@@ -945,7 +945,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 91,
   tipo: 'dominio',
-  nome: "corrente de relÂmpagos",
+  nome: "Corrente de Relâmpagos",
   descricao: "Marque 2 Pontos de Fadiga para fazer um teste de conjuração e liberar relâmpagos em cadeia contra todos os alvos próximos. Alvos atingidos devem fazer um teste de reação com Dificuldade igual ao resultado de seu teste de conjuração. Se falharem, sofrem 2d8+4 de dano mágico. Adversários adicionais que não tenham sido alvo da Corrente de Relâmpagos e estejam próximos dos alvos que sofreram dano também devem fazer um teste de reação. Se falharem, sofrem 2d8+4 de dano mágico. A corrente continua até não haver mais adversários no alcance.",
   dominio_key: "arcano",
   nivel_dominio: 5,
@@ -1155,7 +1155,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 112,
   tipo: 'dominio',
-  nome: "vantagem do campeão",
+  nome: "Vantagem do Campeão",
   descricao: "Ao ter sucesso crítico em um ataque, você pode gastar até 3 Pontos de Esperança e escolher uma das opções a seguir para cada Ponto de Esperança gasto dessa forma: • Você recupera 1 Ponto de Vida; • Você recupera 1 Ponto de Armadura; • O alvo deve marcar 1 PV adicional. Você não pode escolher a mesma opção mais de uma vez.",
   dominio_key: "lamina",
   nivel_dominio: 5,
@@ -1205,7 +1205,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 117,
   tipo: 'dominio',
-  nome: "golpe De Raspão",
+  nome: "Golpe de Raspão",
   descricao: "Quando erra um ataque, você pode marcar 1 Ponto de Fadiga para causar o dano da arma usando metade de sua Proficiência.",
   dominio_key: "lamina",
   nivel_dominio: 7,
@@ -1215,7 +1215,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 118,
   tipo: 'dominio',
-  nome: "grito de guerra",
+  nome: "Grito de Guerra",
   descricao: "Uma vez por descanso longo, enquanto se lança rumo ao perigo, você pode emitir um grito de guerra que inspira seus aliados. Cada aliado capaz de ouvi-lo recupera 1 Ponto de Fadiga e ganha 1 Ponto de Esperança. Além disso, seus aliados fazem testes de ataque com vantagem até que você ou algum aliado role uma falha com Medo.",
   dominio_key: "lamina",
   nivel_dominio: 8,
@@ -1235,7 +1235,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 120,
   tipo: 'dominio',
-  nome: "guerra e glória",
+  nome: "Guerra e Glória",
   descricao: "Em um sucesso crítico ao atacar com uma arma, receba 1 Ponto de Esperança adicional ou recupere 1 Ponto de Fadiga adicional. Além disso, ao causar dano suficiente para derrotar um inimigo, receba 1 Ponto de Esperança ou recupere 1 PF.",
   dominio_key: "lamina",
   nivel_dominio: 9,
@@ -1375,7 +1375,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 134,
   tipo: 'dominio',
-  nome: "golpe pessoal",
+  nome: "Golpe Pessoal",
   descricao: "Você tem um golpe icônico de combate. Descreva-o e dê um nome a ele. Uma vez por descanso, ao utilizá-lo como parte de uma ação, você pode rolar 1d20 como seu Dado de Esperança. Em um sucesso, recupere 1 Ponto de Fadiga.",
   dominio_key: "falange",
   nivel_dominio: 5,
@@ -1415,7 +1415,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 138,
   tipo: 'dominio',
-  nome: "ACUIDADE Cruel",
+  nome: "Acuidade Cruel",
   descricao: "Ao acertar um ataque com uma arma, receba um bônus igual à sua Acuidade ou Agilidade na rolagem de dano.",
   dominio_key: "falange",
   nivel_dominio: 7,
@@ -1435,7 +1435,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 140,
   tipo: 'dominio',
-  nome: "amontoar",
+  nome: "Amontoar",
   descricao: "Faça um teste de Agilidade contra todos os alvos próximos. Gaste 1 Ponto de Esperança para mover os alvos que você acerta, bem como quaisquer aliados próximos voluntários, para outro ponto em alcance próximo.",
   dominio_key: "falange",
   nivel_dominio: 8,
@@ -1705,7 +1705,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 167,
   tipo: 'dominio',
-  nome: "enfeitiçar",
+  nome: "Enfeitiçar",
   descricao: "Faça um teste de conjuração contra um alvo próximo. Em um sucesso, ele fica temporariamente Enfeitiçado. Enquanto estiver Enfeitiçado, a atenção do alvo se fixa em você. O campo de visão dele se estreita e todos os sons além da sua voz são abafados. Uma vez por descanso, você pode marcar 1 Ponto de Fadiga para forçar o alvo Enfeitiçado a marcar 1 PF também.",
   dominio_key: "graca",
   nivel_dominio: 1,
@@ -1855,7 +1855,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 182,
   tipo: 'dominio',
-  nome: "enfeitiçar em Massa",
+  nome: "Enfeitiçar em Massa",
   descricao: "Faça um teste de conjuração contra todos os alvos distantes. Alvos atingidos ficam temporariamente Enfeitiçados. Enquanto um alvo estiver Enfeitiçado, a atenção dele se fixa em você. O campo de visão dele se estreita e todos os sons além da sua voz são abafados. Marque 1 Ponto de Fadiga para forçar todos os alvos Enfeitiçados a marcarem 1 PF, encerrando este feitiço.",
   dominio_key: "graca",
   nivel_dominio: 8,
@@ -1865,7 +1865,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 183,
   tipo: 'dominio',
-  nome: "imitador",
+  nome: "Imitador",
   descricao: "Uma vez por descanso longo, esta carta pode imitar as habilidades de outra carta de domínio de 8º nível ou menor na mão de outro jogador. Gaste uma quantidade de Esperança igual à metade do nível da carta para ter acesso à habilidade. A cópia permanece até seu próximo descanso ou até o outro jogador colocar a carta original na reserva.",
   dominio_key: "graca",
   nivel_dominio: 9,
@@ -1935,7 +1935,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 190,
   tipo: 'dominio',
-  nome: "Espírito da meia-noite",
+  nome: "Espírito da Meia-Noite",
   descricao: "Gaste 1 Ponto de Esperança para invocar um espírito de tamanho humanoide que pode se mover ou carregar coisas para você até seu próximo descanso. Você também pode mandá-lo atacar um adversário. Ao fazer isso, faça um teste de conjuração contra um alvo muito distante. Em um sucesso, o espírito se move até ficar corpo a corpo ao alvo. Role um número de d6 igual ao seu atributo de conjuração e cause o resultado deles como dano mágico ao alvo. O espírito então se dissipa. Você pode ter apenas um espírito por vez.",
   dominio_key: "meia-noite",
   nivel_dominio: 2,
@@ -2035,7 +2035,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 200,
   tipo: 'dominio',
-  nome: "Dom da meia-noite",
+  nome: "Dom da Meia-Noite",
   descricao: "Se 4 ou mais cartas de domínio na sua mão pertencerem ao domínio da Meia-noite, receba os seguintes benefícios: • Uma vez por descanso, se você tiver 0 Ponto de Esperança e o mestre for receber Medo, em vez disso, você pode receber 1 Ponto de Esperança; • Ao acertar um ataque, você pode marcar 1 Ponto de Fadiga para somar o resultado de seu Dado de Medo à rolagem de dano.",
   dominio_key: "meia-noite",
   nivel_dominio: 7,
@@ -2095,7 +2095,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 206,
   tipo: 'dominio',
-  nome: "ECLIPSE",
+  nome: "Eclipse",
   descricao: "Faça um teste de conjuração (16). Uma vez por descanso longo, em um sucesso, faça com que toda a área em alcance distante caia em completa escuridão, na qual apenas você e seus aliados podem enxergar. Os testes de ataque contra você ou seus aliados têm desvantagem dentro dessa escuridão. Além disso, quando você ou um aliado tem um sucesso com Esperança contra um adversário dentro dessa área, o alvo deve marcar 1 Ponto de Fadiga. Este feitiço dura até o mestre gastar 1 Ponto de Medo no turno dele para encerrar o efeito ou até você sofrer dano grave.",
   dominio_key: "meia-noite",
   nivel_dominio: 10,
@@ -2125,7 +2125,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 209,
   tipo: 'dominio',
-  nome: "voz da Natureza",
+  nome: "Voz da Natureza",
   descricao: "Você fala o idioma do mundo natural. Quando quiser falar com as plantas e animais ao seu redor, faça um teste de Instinto (12). Em um sucesso, essas plantas ou animais fornecem a informação que conhecem. Se rolar com Medo, o conhecimento fornecido pode ser limitado ou ter um custo. Além disso, antes de fazer um testede conjuração em um ambiente natural, você pode gastar 1 Ponto de Esperança para receber um bônus de +2 na rolagem.",
   dominio_key: "sabedoria",
   nivel_dominio: 1,
@@ -2555,7 +2555,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 252,
   tipo: 'dominio',
-  nome: "sou seu escudo",
+  nome: "Sou Seu Escudo",
   descricao: "Quando um aliado muito próximo for sofrer dano, você pode marcar 1 Ponto de Fadiga para prostrar-se no caminho e virar o alvo do ataque no lugar dele. Ao sofrer dano desse ataque, você pode marcar um número qualquer de Pontos de Armadura.",
   dominio_key: "valor",
   nivel_dominio: 1,
@@ -2665,7 +2665,7 @@ const DOMINIOS: CardRow[] = [
 {
   num: 263,
   tipo: 'dominio',
-  nome: "desprezar fraqueza",
+  nome: "Desprezar Fraqueza",
   descricao: "Quando sofrer dano, você pode marcar 1 Ponto de Fadiga para reduzir a gravidade do dano em um limiar. Ao fazer isso, role 1d6. Se tirar 3 ou menos, coloque esta carta na reserva.",
   dominio_key: "valor",
   nivel_dominio: 7,
@@ -2757,15 +2757,192 @@ async function main() {
   // ─── Seed usuário admin ─────────────────────────────────────────────────────
   const adminEmail = 'm4arcos@gmail.com'
   const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail])
+  let adminId: string
   if (rows.length === 0) {
-    const adminId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+    adminId = Date.now().toString(36) + Math.random().toString(36).slice(2)
     await pool.query(
       'INSERT INTO users (id, nome, email, senha_temp, temp_ativa, is_admin) VALUES ($1, $2, $3, $4, TRUE, TRUE)',
       [adminId, 'Marcos - Admin', adminEmail, bcrypt.hashSync('adminTempDH!', 10)]
     )
     console.log(`✓ Usuário admin criado: ${adminEmail}`)
   } else {
+    adminId = rows[0].id as string
     console.log(`  Usuário admin já existe: ${adminEmail}`)
+  }
+
+  // ─── Seed usuário Diego Figliero ────────────────────────────────────────────
+  const diegoEmail = 'diegofigliero@gmail.com'
+  const { rows: diegoRows } = await pool.query('SELECT id FROM users WHERE email = $1', [diegoEmail])
+  let diegoId: string
+  if (diegoRows.length === 0) {
+    diegoId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+    const diegoHash = bcrypt.hashSync('Diego26cm', 10)
+    await pool.query(
+      'INSERT INTO users (id, nome, email, senha_hash, senha_temp, temp_ativa) VALUES ($1, $2, $3, $4, $5, FALSE)',
+      [diegoId, 'Diego Figliero', diegoEmail, diegoHash, diegoHash]
+    )
+    console.log(`✓ Usuário criado: ${diegoEmail}`)
+  } else {
+    diegoId = diegoRows[0].id as string
+    console.log(`  Usuário já existe: ${diegoEmail}`)
+  }
+
+  // ─── Seed campanha ───────────────────────────────────────────────────────────
+  const campNome = 'A Maldição de Valdris'
+  const { rows: campRows } = await pool.query('SELECT id FROM campaigns WHERE nome = $1', [campNome])
+  let campId: string
+  if (campRows.length === 0) {
+    campId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+    const campCode = 'VALDRS'
+    await pool.query(
+      'INSERT INTO campaigns (id, nome, codigo, criador_id) VALUES ($1, $2, $3, $4)',
+      [campId, campNome, campCode, adminId]
+    )
+    // Mestre como membro aprovado
+    await pool.query(
+      "INSERT INTO campaign_members (campaign_id, user_id, status) VALUES ($1, $2, 'aprovado') ON CONFLICT DO NOTHING",
+      [campId, adminId]
+    )
+    // Diego como membro aprovado
+    await pool.query(
+      "INSERT INTO campaign_members (campaign_id, user_id, status) VALUES ($1, $2, 'aprovado') ON CONFLICT DO NOTHING",
+      [campId, diegoId]
+    )
+    console.log(`✓ Campanha criada: "${campNome}" (código: ${campCode})`)
+  } else {
+    campId = campRows[0].id as string
+    console.log(`  Campanha já existe: "${campNome}"`)
+  }
+
+  // ─── Seed personagens de Diego ───────────────────────────────────────────────
+  const chars = [
+    {
+      id: 'seed_char_kaela',
+      ownerId: adminId,
+      nome: 'Kaela Voss',
+      cls: 'guerreiro',
+      heranca: 'Humano',
+      genero: 'Feminino',
+      subclasse: 'Escolhido da Bravura',
+      nivel: 3, prof: 2,
+      agi: 0, for: 2, acu: 1, ins: 0, pre: 1, con: 0,
+      agiUp: false, forUp: false, acuUp: false, insUp: false, preUp: false, conUp: false,
+      evBonus: 0, pvMax: 7, pfMax: 4, armBase: 4,
+      dm: 8, dG: 15,
+      wpNome: 'Espada Longa', wpAttr: 'FOR', wpDados: '1d12+2', wpHab: 'Corte Poderoso: ao acertar, você pode marcar 1 PF para aumentar o dano em +1d6.', wpMaos: 'uma',
+      wsNome: 'Escudo de Batalha', wsAttr: '—', wsDados: '—', wsHab: 'Garante +1 PA enquanto equipado.', wsMaos: 'uma',
+      armNome: 'Armadura de Placas', armLim: '10/16', armHab: 'Pesada: –1 Agilidade enquanto vestida.',
+      gP: 3, gB: 1, gBau: 0,
+      wi1Nome: '', wi1Attr: '', wi1Dados: '', wi1Hab: '', wi1Tipo: '', wi1Maos: 'uma',
+      wi2Nome: '', wi2Attr: '', wi2Dados: '', wi2Hab: '', wi2Tipo: '', wi2Maos: 'uma',
+      notas: '',
+      exps: [
+        { nome: 'Combate em Arenas', val: 2 },
+        { nome: 'Táticas Militares', val: 2 },
+        { nome: 'Intimidação', val: 1 },
+        { nome: 'Sobrevivência nas Planícies', val: 1 },
+        { nome: 'História da Guerra de Valdris', val: 1 },
+      ],
+      inv: [
+        { nome: 'Kit de Primeiros Socorros', qtd: 1, desc: 'Curativos e ervas medicinais.' },
+        { nome: 'Tocha', qtd: 3, desc: '' },
+        { nome: 'Rações de Viagem', qtd: 5, desc: '5 dias de comida.' },
+      ],
+      pvAtual: 7, pfAtual: 4, esperanca: 6, paAtual: 4,
+      pvTemp: 0, pfTemp: 0, paTemp: 0, hopeTemp: 0,
+      multiEnabled: false, multiCls: null, multiDom: null,
+      evo: { p2: { atrib_0: true, atrib_1: true, pv_0: true, pv_1: true }, p3: {}, p4: {} },
+      campaign_id: campId, privado: false,
+    },
+    {
+      id: 'seed_char_sylvara',
+      nome: 'Sylvara Lunares',
+      cls: 'druida',
+      heranca: 'Elfo',
+      genero: 'Feminino',
+      subclasse: 'Protetor da Renovação',
+      nivel: 2, prof: 2,
+      agi: 1, for: -1, acu: 0, ins: 2, pre: 1, con: 0,
+      agiUp: false, forUp: false, acuUp: false, insUp: false, preUp: false, conUp: false,
+      evBonus: 0, pvMax: 5, pfMax: 6, armBase: 2,
+      dm: 6, dG: 13,
+      wpNome: 'Cajado da Floresta', wpAttr: 'INS', wpDados: '1d8', wpHab: 'Raízes Enredantes: ao acertar com sucesso, o alvo fica Imobilizado até o fim do próximo turno.', wpMaos: 'duas',
+      wsNome: '', wsAttr: '', wsDados: '', wsHab: '', wsMaos: 'uma',
+      armNome: 'Armadura de Couro', armLim: '5/11', armHab: '',
+      gP: 1, gB: 2, gBau: 0,
+      wi1Nome: '', wi1Attr: '', wi1Dados: '', wi1Hab: '', wi1Tipo: '', wi1Maos: 'uma',
+      wi2Nome: '', wi2Attr: '', wi2Dados: '', wi2Hab: '', wi2Tipo: '', wi2Maos: 'uma',
+      notas: 'Forma de Fera preferida: lobo das névoas (Agi +2, mordida 1d10, Evasão 13).',
+      exps: [
+        { nome: 'Conhecimento de Plantas e Ervas', val: 3 },
+        { nome: 'Comunhão com Animais', val: 2 },
+        { nome: 'Rituais Druídicos', val: 2 },
+        { nome: 'Navegação pela Floresta', val: 1 },
+        { nome: 'Cura Natural', val: 1 },
+      ],
+      inv: [
+        { nome: 'Ervas Medicinais', qtd: 4, desc: 'Recupera 1 PF ao consumir.' },
+        { nome: 'Diário de Botânica', qtd: 1, desc: 'Anotações sobre flora de Valdris.' },
+        { nome: 'Tocha', qtd: 2, desc: '' },
+      ],
+      pvAtual: 5, pfAtual: 6, esperanca: 6, paAtual: 2,
+      pvTemp: 0, pfTemp: 0, paTemp: 0, hopeTemp: 0,
+      multiEnabled: false, multiCls: null, multiDom: null,
+      evo: { p2: { atrib_0: true, atrib_1: true }, p3: {}, p4: {} },
+      campaign_id: campId, privado: false,
+    },
+    {
+      id: 'seed_char_draven',
+      nome: 'Draven Ash',
+      cls: 'ladino',
+      heranca: 'Halfling',
+      genero: 'Masculino',
+      subclasse: 'Mafioso',
+      nivel: 4, prof: 2,
+      agi: 3, for: -1, acu: 2, ins: 1, pre: 1, con: -1,
+      agiUp: false, forUp: false, acuUp: false, insUp: false, preUp: false, conUp: false,
+      evBonus: 1, pvMax: 5, pfMax: 5, armBase: 0,
+      dm: 7, dG: 14,
+      wpNome: 'Adaga Sombria', wpAttr: 'AGI', wpDados: '1d6', wpHab: 'Envenenada: ao acertar, o alvo marca 1 PF adicional no início do próximo turno dele.', wpMaos: 'uma',
+      wsNome: 'Adaga Lançadora', wsAttr: 'ACU', wsDados: '1d6', wsHab: 'Alcance: pode ser lançada até alcance próximo.', wsMaos: 'uma',
+      armNome: 'Roupa de Couro Leve', armLim: '—', armHab: 'Silenciosa: vantagem em testes de furtividade.',
+      gP: 5, gB: 1, gBau: 0,
+      wi1Nome: 'Adaga de Arremesso', wi1Attr: 'ACU', wi1Dados: '1d4', wi1Hab: '', wi1Tipo: 'secundaria', wi1Maos: 'uma',
+      wi2Nome: '', wi2Attr: '', wi2Dados: '', wi2Hab: '', wi2Tipo: '', wi2Maos: 'uma',
+      notas: 'Membro da Guilda das Sombras de Valdris. Procurado por roubo no Porto de Arendar.',
+      exps: [
+        { nome: 'Arrombamento e Furtividade', val: 3 },
+        { nome: 'Contatos no Submundo', val: 2 },
+        { nome: 'Disfarce e Engano', val: 2 },
+        { nome: 'Acrobacia', val: 1 },
+        { nome: 'Conhecimento da Cidade', val: 1 },
+      ],
+      inv: [
+        { nome: 'Kit de Ladrão', qtd: 1, desc: 'Ferramentas para arrombamento.' },
+        { nome: 'Corda (15m)', qtd: 1, desc: '' },
+        { nome: 'Antídoto', qtd: 2, desc: 'Neutraliza venenos comuns.' },
+        { nome: 'Máscara de Disfarce', qtd: 1, desc: '+1 em testes de disfarce.' },
+      ],
+      pvAtual: 5, pfAtual: 5, esperanca: 5, paAtual: 0,
+      pvTemp: 0, pfTemp: 0, paTemp: 0, hopeTemp: 0,
+      multiEnabled: false, multiCls: null, multiDom: null,
+      evo: { p2: { atrib_0: true, atrib_1: true, pv_0: true, pv_1: true }, p3: {}, p4: {} },
+      campaign_id: campId, privado: false,
+    },
+  ]
+
+  for (const char of chars) {
+    const { rows: existRows } = await pool.query('SELECT id FROM characters WHERE id = $1', [char.id])
+    if (existRows.length === 0) {
+      const { id, campaign_id, ownerId, ...data } = char as typeof char & { ownerId?: string }
+      await pool.query(
+        'INSERT INTO characters (id, data, user_id, campaign_id) VALUES ($1, $2, $3, $4)',
+        [id, JSON.stringify({ ...data, id }), ownerId ?? diegoId, campaign_id]
+      )
+      console.log(`✓ Personagem criado: ${char.nome}`)
+    } else {
+      console.log(`  Personagem já existe: ${char.nome}`)
+    }
   }
 
   await pool.end()

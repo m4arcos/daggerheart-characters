@@ -1,5 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import pool, { initDb } from './db';
 import {
   requireAuth, requireAdmin,
@@ -13,8 +16,28 @@ function uid() {
 
 export const app = express();
 
+const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -98,6 +121,12 @@ app.post('/api/auth/set-password', requireAuth, async (req: Request, res: Respon
   };
 
   res.json({ token: generateToken(authUser), user: authUser });
+});
+
+// POST /api/upload — upload de imagem
+app.post('/api/upload', requireAuth, upload.single('file'), (req: Request, res: Response) => {
+  if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+  res.json({ url: `/uploads/${req.file.filename}` });
 });
 
 // ── Admin ────────────────────────────────────────────────────────────────────
@@ -350,6 +379,30 @@ app.get('/api/campaigns/:id', requireAuth, async (req: Request, res: Response) =
   res.json({ ...campaign, membros, isCreator });
 });
 
+// PATCH /api/campaigns/:id — atualizar campanha (nome, cover_image)
+app.patch('/api/campaigns/:id', requireAuth, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { rows: campRows } = await pool.query('SELECT * FROM campaigns WHERE id = $1', [id]);
+  const campaign = campRows[0] as any;
+  if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+  if (campaign.criador_id !== req.user!.userId) return res.status(403).json({ error: 'Apenas o criador pode editar' });
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  let idx = 1;
+  if (req.body.nome !== undefined) { fields.push(`nome = $${idx++}`); values.push(req.body.nome.trim()); }
+  if (req.body.cover_image !== undefined) { fields.push(`cover_image = $${idx++}`); values.push(req.body.cover_image); }
+  if (req.body.status !== undefined) {
+    const validStatus = ['ativa', 'pausada', 'arquivada'];
+    if (!validStatus.includes(req.body.status)) return res.status(400).json({ error: 'Status inválido' });
+    fields.push(`status = $${idx++}`); values.push(req.body.status);
+  }
+  if (fields.length === 0) return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+  values.push(id);
+  await pool.query(`UPDATE campaigns SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+  const { rows } = await pool.query('SELECT * FROM campaigns WHERE id = $1', [id]);
+  res.json(rows[0]);
+});
+
 // DELETE /api/campaigns/:id — deletar campanha (só criador)
 app.delete('/api/campaigns/:id', requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -460,9 +513,9 @@ app.get('/api/cards', requireAuth, async (req: Request, res: Response) => {
   if (classe) { query += ` AND classe = $${paramIdx++}`; params.push(classe); }
   if (q) {
     const term = `%${q}%`;
-    query += ` AND (nome ILIKE $${paramIdx} OR descricao ILIKE $${paramIdx + 1} OR subclasse_nome ILIKE $${paramIdx + 2})`;
-    params.push(term, term, term);
-    paramIdx += 3;
+    query += ` AND (nome ILIKE $${paramIdx} OR descricao ILIKE $${paramIdx + 1} OR subclasse_nome ILIKE $${paramIdx + 2} OR CAST(num AS TEXT) ILIKE $${paramIdx + 3})`;
+    params.push(term, term, term, term);
+    paramIdx += 4;
   }
 
   query += ' ORDER BY num ASC';

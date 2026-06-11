@@ -39,23 +39,61 @@ export default function SetPasswordScreen() {
         position: 'absolute', right: 10, top: '50%',
         transform: 'translateY(-50%)',
         background: 'none', border: 'none', cursor: 'pointer',
-        fontSize: '1rem', padding: 0, lineHeight: 1,
+        color: 'var(--text-dim)', padding: 0, lineHeight: 1,
+        display: 'flex', alignItems: 'center',
+        transition: 'color .15s',
       }}
+      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
     >
-      {showSenha ? '🙈' : '👁'}
+      <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+        {showSenha ? 'visibility_off' : 'visibility'}
+      </span>
     </button>
   );
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ width: '100%', maxWidth: 380 }}>
+    <div style={{
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '16px',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+        background: 'radial-gradient(circle at 50% 0%, rgba(200,170,90,0.09) 0%, transparent 55%)',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src="/daggerheart-logo.svg" alt="Daggerheart" style={{ height: 90, display: 'block', margin: '0 auto' }} />
+          <img
+            src="/daggerheart-logo.svg"
+            alt="Eldritch Archive"
+            style={{ height: 72, display: 'block', margin: '0 auto 16px' }}
+          />
+          <h1 style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '1.4rem',
+            fontWeight: 700,
+            color: 'var(--accent)',
+            letterSpacing: '-0.02em',
+          }}>
+            ELDRITCH ARCHIVE
+          </h1>
         </div>
 
-        <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 600 }}>Definir senha definitiva</h2>
-          <p style={{ margin: '0 0 20px', color: 'var(--text-dim)', fontSize: '.85rem' }}>
+        <div className="glass-card" style={{ padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 6 }}>
+            Definir senha definitiva
+          </h2>
+          <p style={{ margin: '0 0 20px', color: 'var(--text-dim)', fontSize: '.88rem', lineHeight: 1.5 }}>
             Olá, {user?.nome}! Como é seu primeiro acesso, defina uma senha permanente para continuar.
           </p>
 
@@ -63,6 +101,15 @@ export default function SetPasswordScreen() {
             <div>
               <label className="field-label" htmlFor="sp-nova">Nova senha</label>
               <div style={{ position: 'relative' }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--text-dim)', fontSize: 17, pointerEvents: 'none',
+                  }}
+                >
+                  lock
+                </span>
                 <input
                   id="sp-nova"
                   type={showSenha ? 'text' : 'password'}
@@ -70,7 +117,7 @@ export default function SetPasswordScreen() {
                   value={novaSenha}
                   onChange={e => { setNovaSenha(e.target.value); setErro(''); }}
                   placeholder="Mínimo 6 caracteres"
-                  style={{ paddingRight: 40 }}
+                  style={{ paddingLeft: 36, paddingRight: 40 }}
                   required
                   autoFocus
                 />
@@ -81,6 +128,15 @@ export default function SetPasswordScreen() {
             <div>
               <label className="field-label" htmlFor="sp-confirmar">Confirmar senha</label>
               <div style={{ position: 'relative' }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--text-dim)', fontSize: 17, pointerEvents: 'none',
+                  }}
+                >
+                  lock_reset
+                </span>
                 <input
                   id="sp-confirmar"
                   type={showSenha ? 'text' : 'password'}
@@ -88,7 +144,7 @@ export default function SetPasswordScreen() {
                   value={confirmar}
                   onChange={e => { setConfirmar(e.target.value); setErro(''); }}
                   placeholder="Repita a senha"
-                  style={{ paddingRight: 40 }}
+                  style={{ paddingLeft: 36, paddingRight: 40 }}
                   required
                 />
                 {toggleBtn}
@@ -97,20 +153,24 @@ export default function SetPasswordScreen() {
 
             {erro && (
               <div style={{
-                background: 'rgba(224, 90, 90, .15)',
+                background: 'rgba(192, 57, 43, .15)',
                 border: '1px solid var(--danger)',
                 borderRadius: 'var(--r)',
-                padding: '8px 12px',
-                color: 'var(--danger)',
+                padding: '10px 12px',
+                color: '#ff8a80',
                 fontSize: '.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#ff8a80', flexShrink: 0 }}>error</span>
                 {erro}
               </div>
             )}
 
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn-gold-shimmer"
               disabled={loading}
               style={{ marginTop: 4 }}
             >
