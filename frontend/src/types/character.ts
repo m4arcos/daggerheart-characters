@@ -72,6 +72,9 @@ export interface Character {
   multiSubclasse: string;
 
   evo: { p2: EvoState; p3: EvoState; p4: EvoState };
+
+  campaign_id?: string;
+  privado?: boolean;
 }
 
 export function makeDefaultCharacter(): Omit<Character, 'id'> {

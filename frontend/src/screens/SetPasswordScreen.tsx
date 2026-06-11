@@ -7,6 +7,7 @@ export default function SetPasswordScreen() {
   const [confirmar, setConfirmar] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSenha, setShowSenha] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -29,6 +30,22 @@ export default function SetPasswordScreen() {
     }
   }
 
+  const toggleBtn = (
+    <button
+      type="button"
+      onClick={() => setShowSenha(v => !v)}
+      aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+      style={{
+        position: 'absolute', right: 10, top: '50%',
+        transform: 'translateY(-50%)',
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: '1rem', padding: 0, lineHeight: 1,
+      }}
+    >
+      {showSenha ? '🙈' : '👁'}
+    </button>
+  );
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
@@ -45,29 +62,37 @@ export default function SetPasswordScreen() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label className="field-label" htmlFor="sp-nova">Nova senha</label>
-              <input
-                id="sp-nova"
-                type="password"
-                className="inp"
-                value={novaSenha}
-                onChange={e => { setNovaSenha(e.target.value); setErro(''); }}
-                placeholder="Mínimo 6 caracteres"
-                required
-                autoFocus
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="sp-nova"
+                  type={showSenha ? 'text' : 'password'}
+                  className="inp"
+                  value={novaSenha}
+                  onChange={e => { setNovaSenha(e.target.value); setErro(''); }}
+                  placeholder="Mínimo 6 caracteres"
+                  style={{ paddingRight: 40 }}
+                  required
+                  autoFocus
+                />
+                {toggleBtn}
+              </div>
             </div>
 
             <div>
               <label className="field-label" htmlFor="sp-confirmar">Confirmar senha</label>
-              <input
-                id="sp-confirmar"
-                type="password"
-                className="inp"
-                value={confirmar}
-                onChange={e => { setConfirmar(e.target.value); setErro(''); }}
-                placeholder="Repita a senha"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="sp-confirmar"
+                  type={showSenha ? 'text' : 'password'}
+                  className="inp"
+                  value={confirmar}
+                  onChange={e => { setConfirmar(e.target.value); setErro(''); }}
+                  placeholder="Repita a senha"
+                  style={{ paddingRight: 40 }}
+                  required
+                />
+                {toggleBtn}
+              </div>
             </div>
 
             {erro && (

@@ -36,6 +36,16 @@ vi.mock('../src/api', () => ({
     cards: {
       getAll: vi.fn().mockResolvedValue([]),
     },
+    campaigns: {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({}),
+      join: vi.fn().mockResolvedValue({}),
+      get: vi.fn().mockResolvedValue({}),
+      delete: vi.fn().mockResolvedValue({ ok: true }),
+      approveMember: vi.fn().mockResolvedValue({ ok: true }),
+      removeMember: vi.fn().mockResolvedValue({ ok: true }),
+      getCharacters: vi.fn().mockResolvedValue([]),
+    },
   },
 }))
 
