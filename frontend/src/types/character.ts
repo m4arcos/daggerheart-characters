@@ -73,6 +73,7 @@ export interface Character {
 
   evo: { p2: EvoState; p3: EvoState; p4: EvoState };
 
+  avatar?: string;
   campaign_id?: string;
   privado?: boolean;
 }

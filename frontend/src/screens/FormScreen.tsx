@@ -6,6 +6,7 @@ import { MULTI } from '../constants/multi';
 import { EVO_TIERS, TIER_RANGES } from '../constants/evo';
 import CollapsibleSection from '../components/CollapsibleSection';
 import NumInput from '../components/NumInput';
+import ImageUpload from '../components/ImageUpload';
 import { api } from '../api';
 import { Card, DOMAIN_NAME_TO_KEY } from '../types/cards';
 import { Campaign } from '../types/campaign';
@@ -42,6 +43,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
   const [evo, setEvo] = useState<{ p2: EvoState; p3: EvoState; p4: EvoState }>(() =>
     existing?.evo || { p2: {}, p3: {}, p4: {} }
   );
+  const [evoOpen, setEvoOpen] = useState<Record<string, boolean>>({});
   const [subclasseOpts, setSubclasseOpts] = useState<string[]>([]);
   const [allSubclasseCards, setAllSubclasseCards] = useState<Card[]>([]);
   const [dominioCards, setDominioCards] = useState<Card[]>([]);
@@ -200,10 +202,21 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
     ? allMultiSubclasseCards.find(c => c.subclasse_nome === form.multiSubclasse && c.nivel_subclasse === 'Fundamental')
     : null;
 
+  const formTitle = editId ? 'Editar Personagem' : 'Novo Personagem';
+
   return (
     <div className="form-wrap">
+      {/* TOOLBAR */}
+      <div className="form-toolbar">
+        <span className="form-toolbar-title">{formTitle}</span>
+        <div className="form-toolbar-actions">
+          <button className="btn btn-ghost btn-sm" onClick={onDone}>Cancelar</button>
+          <button className="btn btn-primary btn-sm" onClick={handleSave}>Salvar Personagem</button>
+        </div>
+      </div>
+
       {/* CLASSE */}
-      <CollapsibleSection title="Classe">
+      <CollapsibleSection title="Classe" icon="badge">
         <div className="cls-grid">
           {Object.entries(CLS).map(([k, v]) => (
             <div
@@ -224,7 +237,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
 
       {/* CAMPANHA */}
       {(myCampaigns.length > 0 || form.campaign_id) && (
-        <CollapsibleSection title="Campanha">
+        <CollapsibleSection title="Campanha" icon="groups">
           <div className="frow c2">
             <div className="fg">
               <label>Vincular à Campanha</label>
@@ -257,7 +270,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
                   className={`chk-toggle${form.privado ? ' active' : ''}`}
                   onClick={() => set('privado', !form.privado)}
                 >
-                  {form.privado ? 'Sim (só o Mestre vê)' : '—'}
+                  {form.privado ? 'Sim (só o Mestre vê)' : 'Não (visível para todos os jogadores da campanha)'}
                 </div>
               </div>
             )}
@@ -266,13 +279,25 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       )}
 
       {/* IDENTIDADE */}
-      <CollapsibleSection title="Identidade">
-        <div className="frow c2">
-          <div className="fg"><label>Nome</label>
-            <input type="text" value={form.nome} placeholder="Nome do personagem" onChange={e => set('nome', e.target.value)} />
-          </div>
-          <div className="fg"><label>Gênero</label>
-            <input type="text" value={form.genero} placeholder="Ex: Masculino…" onChange={e => set('genero', e.target.value)} />
+      <CollapsibleSection title="Identidade" icon="fingerprint">
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 10 }}>
+          <ImageUpload
+            value={form.avatar}
+            onChange={url => set('avatar', url)}
+            label="Avatar"
+            shape="circle"
+            size={88}
+            placeholder="person"
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="frow c2" style={{ marginBottom: 0 }}>
+              <div className="fg"><label>Nome</label>
+                <input type="text" value={form.nome} placeholder="Nome do personagem" onChange={e => set('nome', e.target.value)} />
+              </div>
+              <div className="fg"><label>Gênero</label>
+                <input type="text" value={form.genero} placeholder="Ex: Masculino…" onChange={e => set('genero', e.target.value)} />
+              </div>
+            </div>
           </div>
         </div>
         <div className="frow c2">
@@ -316,21 +341,21 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* ATRIBUTOS */}
-      <CollapsibleSection title="Atributos">
+      <CollapsibleSection title="Atributos" icon="bar_chart">
         <div className="frow c6">
           {(['agi', 'for', 'acu', 'ins', 'pre', 'con'] as const).map(a => {
             const labels: Record<string, string> = { agi: 'Agilidade', for: 'Força', acu: 'Acuidade', ins: 'Instinto', pre: 'Presença', con: 'Conhecimento' };
             const upKey = `${a}Up` as keyof FormState;
             const checked = !!form[upKey];
             return (
-              <div key={a} className="fg">
-                <label>{labels[a]}</label>
+              <div key={a} className="attr-group">
+                <span className="attr-group-lbl">{labels[a]}</span>
                 <NumInput className="attr-in" step={1} value={form[a]}
                   onChange={v => set(a, v)} />
-                <label style={{ marginTop: 6 }}>↑ Evoluído</label>
-                <div className={`chk-toggle${checked ? ' active' : ''}`} onClick={() => set(upKey, !checked)}>
-                  {checked ? 'Sim' : '—'}
-                </div>
+                <label className="attr-evo-toggle" onClick={() => set(upKey, !checked)}>
+                  <input type="checkbox" checked={checked} onChange={() => set(upKey, !checked)} />
+                  <span>Evoluído</span>
+                </label>
               </div>
             );
           })}
@@ -354,7 +379,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* SAÚDE & LIMIARES */}
-      <CollapsibleSection title="Saúde & Limiares de Dano">
+      <CollapsibleSection title="Saúde & Limiares de Dano" icon="favorite">
         <p style={{ fontSize: '.75rem', color: 'var(--text-dim)', marginBottom: 10 }}>
           Some seu nível atual aos limiares base para obter os valores finais.
         </p>
@@ -369,8 +394,8 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* ARMAS ATIVAS */}
-      <CollapsibleSection title="Armas Ativas">
-        <div className="frow c2">
+      <CollapsibleSection title="Armas Ativas" icon="swords">
+        <div className="frow c2 weapons-grid">
           {(['principal', 'secundaria'] as const).map(slot => {
             const isOpen = swapOpen === slot;
             const invOptions = ([1, 2] as const)
@@ -415,7 +440,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* ARMADURA */}
-      <CollapsibleSection title="Armadura Ativa">
+      <CollapsibleSection title="Armadura Ativa" icon="shield">
         <div className="frow c3">
           <div className="fg"><label>Nome</label>
             <input type="text" value={form.armNome} placeholder="Ex: Gibão" onChange={e => set('armNome', e.target.value)} />
@@ -435,7 +460,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* EXPERIÊNCIAS */}
-      <CollapsibleSection title="Experiências" headerRight={
+      <CollapsibleSection title="Experiências" icon="stars" headerRight={
         <button className="btn btn-ghost btn-sm" onClick={addExp}>+ Experiência</button>
       }>
         <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
@@ -467,7 +492,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* OURO */}
-      <CollapsibleSection title="Ouro">
+      <CollapsibleSection title="Ouro" icon="paid">
         <div className="frow c3">
           <div className="fg"><label>Punhados</label><NumInput inputMode="numeric" min={0} step={1} value={form.gP} onChange={v => set('gP', v)} /></div>
           <div className="fg"><label>Bolsas</label><NumInput inputMode="numeric" min={0} step={1} value={form.gB} onChange={v => set('gB', v)} /></div>
@@ -476,7 +501,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* INVENTÁRIO */}
-      <CollapsibleSection title="Inventário" headerRight={
+      <CollapsibleSection title="Inventário" icon="inventory_2" headerRight={
         <button className="btn btn-ghost btn-sm" onClick={addInv}>+ Item</button>
       }>
         {inv.length === 0
@@ -501,8 +526,8 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* ARMAS NO INVENTÁRIO */}
-      <CollapsibleSection title="Armas no Inventário">
-        <div className="frow c2">
+      <CollapsibleSection title="Armas no Inventário" icon="backpack">
+        <div className="frow c2 weapons-grid">
           <InvWeaponBlock
             title="Arma no Inventário 1"
             nome={form.wi1Nome} attr={form.wi1Attr} dados={form.wi1Dados} hab={form.wi1Hab}
@@ -523,7 +548,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* NOTAS */}
-      <CollapsibleSection title="Habilidades de Classe Adicionais / Notas">
+      <CollapsibleSection title="Habilidades de Classe Adicionais / Notas" icon="notes">
         <div className="fg"><label>Notas / Habilidades extras</label>
           <textarea value={form.notas} rows={4} placeholder="Cartas de domínio, notas de subclasse, etc." onChange={e => set('notas', e.target.value)} />
         </div>
@@ -531,7 +556,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
 
       {/* CARTAS DO PERSONAGEM */}
       {form.cls && (
-        <CollapsibleSection title="Cartas do Personagem">
+        <CollapsibleSection title="Cartas do Personagem" icon="style">
           {!form.subclasse && dominioCards.length === 0 && !multiFundCard && !multiDomainCards.length && (
             <p style={{ color: 'var(--text-dim)', fontSize: '.82rem' }}>
               Selecione uma subclasse para ver as cartas disponíveis.
@@ -725,7 +750,7 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       )}
 
       {/* MULTICLASSE */}
-      <CollapsibleSection title="Multiclasse">
+      <CollapsibleSection title="Multiclasse" icon="people">
         <label className="multi-toggle">
           <input type="checkbox" checked={form.multiEnabled}
             onChange={e => {
@@ -813,54 +838,62 @@ export default function FormScreen({ editId, onDone, campaignId }: Props) {
       </CollapsibleSection>
 
       {/* EVOLUÇÃO */}
-      <CollapsibleSection title="Evolução de Personagem">
+      <CollapsibleSection title="Evolução de Personagem" icon="trending_up">
         {EVO_TIERS.map(tier => {
           const [lo, hi] = TIER_RANGES[tier.key];
           const isActive = nivel >= lo && nivel <= hi;
           const isLocked = nivel < lo;
+          const isOpen = evoOpen[tier.key] ?? isActive;
           return (
-            <div key={tier.key} className={`evo-tier${isActive ? ' active' : ''}${isLocked ? ' locked' : ''}`}>
-              <div className="evo-tier-hdr">
-                {tier.label} — {tier.range}
-                {isActive ? ' ★ Patamar Atual' : ''}
-                {isLocked ? ` — disponível a partir do nível ${lo}` : ''}
+            <div key={tier.key} className={`evo-tier${isActive ? ' active' : ''}${isLocked ? ' locked' : ''}${isOpen ? '' : ' collapsed'}`}>
+              <div
+                className="evo-tier-hdr"
+                style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                onClick={() => setEvoOpen(o => ({ ...o, [tier.key]: !isOpen }))}
+              >
+                <span>
+                  {tier.label} — {tier.range}
+                  {isActive ? ' ★ Patamar Atual' : ''}
+                  {isLocked ? ` — disponível a partir do nível ${lo}` : ''}
+                </span>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--text-dim)', transition: 'transform .25s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>expand_more</span>
               </div>
-              <div className="evo-tier-note">📋 {tier.note}</div>
-              <div className="evo-tier-inst">{tier.inst}</div>
-              {tier.opts.map((opt, oi) => (
-                <div key={opt.id + oi} className="evo-opt">
-                  <div className="evo-chk-group">
-                    {opt.checks === 1 ? (
-                      <div
-                        className={`evo-chk-lbl${evo[tier.key][opt.id] ? ' active' : ''}`}
-                        onClick={() => setEvoCheck(tier.key, opt.id, !evo[tier.key][opt.id])}
-                      >✓</div>
-                    ) : (
-                      Array.from({ length: opt.checks }, (_, s) => {
-                        const key = `${opt.id}_${s}`;
-                        return (
+              {isOpen && (
+                <>
+                  <div className="evo-tier-note">📋 {tier.note}</div>
+                  <div className="evo-tier-inst">{tier.inst}</div>
+                  {tier.opts.map((opt, oi) => (
+                    <div key={opt.id + oi} className="evo-opt">
+                      <div className="evo-chk-group">
+                        {opt.checks === 1 ? (
                           <div
-                            key={s}
-                            className={`evo-chk-lbl${evo[tier.key][key] ? ' active' : ''}`}
-                            onClick={() => setEvoCheck(tier.key, key, !evo[tier.key][key])}
+                            className={`evo-chk-lbl${evo[tier.key][opt.id] ? ' active' : ''}`}
+                            onClick={() => setEvoCheck(tier.key, opt.id, !evo[tier.key][opt.id])}
                           >✓</div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <div className="evo-opt-txt">{opt.label}</div>
-                </div>
-              ))}
-              <div className="evo-tier-footer">🎯 {tier.footer}</div>
+                        ) : (
+                          Array.from({ length: opt.checks }, (_, s) => {
+                            const key = `${opt.id}_${s}`;
+                            return (
+                              <div
+                                key={s}
+                                className={`evo-chk-lbl${evo[tier.key][key] ? ' active' : ''}`}
+                                onClick={() => setEvoCheck(tier.key, key, !evo[tier.key][key])}
+                              >✓</div>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="evo-opt-txt">{opt.label}</div>
+                    </div>
+                  ))}
+                  <div className="evo-tier-footer">🎯 {tier.footer}</div>
+                </>
+              )}
             </div>
           );
         })}
       </CollapsibleSection>
 
-      <div className="form-actions">
-        <button className="btn btn-ghost" onClick={onDone}>Cancelar</button>
-        <button className="btn btn-primary" onClick={handleSave}>💾 Salvar Personagem</button>
-      </div>
     </div>
   );
 }

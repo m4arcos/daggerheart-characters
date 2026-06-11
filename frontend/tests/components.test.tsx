@@ -153,11 +153,12 @@ describe('ListScreen — com personagens', () => {
 })
 
 describe('ListScreen — modal de exclusão', () => {
-  it('botão 🗑 abre modal de confirmação', async () => {
+  it('menu kebab abre modal de confirmação', async () => {
     mockStore.chars = [BASE_CHAR]
     const user = userEvent.setup()
     render(<ListScreen onNew={vi.fn()} onEdit={vi.fn()} onSession={vi.fn()} />)
-    await user.click(screen.getByRole('button', { name: '🗑' }))
+    await user.click(screen.getByTitle('Mais opções'))
+    await user.click(screen.getByText('Excluir'))
     expect(screen.getByText('Excluir personagem?')).toBeInTheDocument()
     expect(screen.getByText(/"Thorin" será removido permanentemente\./)).toBeInTheDocument()
   })
@@ -166,7 +167,8 @@ describe('ListScreen — modal de exclusão', () => {
     mockStore.chars = [BASE_CHAR]
     const user = userEvent.setup()
     render(<ListScreen onNew={vi.fn()} onEdit={vi.fn()} onSession={vi.fn()} />)
-    await user.click(screen.getByRole('button', { name: '🗑' }))
+    await user.click(screen.getByTitle('Mais opções'))
+    await user.click(screen.getByText('Excluir'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
     expect(mockStore.deleteChar).toHaveBeenCalledWith(BASE_CHAR.id)
   })
@@ -175,7 +177,8 @@ describe('ListScreen — modal de exclusão', () => {
     mockStore.chars = [BASE_CHAR]
     const user = userEvent.setup()
     render(<ListScreen onNew={vi.fn()} onEdit={vi.fn()} onSession={vi.fn()} />)
-    await user.click(screen.getByRole('button', { name: '🗑' }))
+    await user.click(screen.getByTitle('Mais opções'))
+    await user.click(screen.getByText('Excluir'))
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(mockStore.deleteChar).not.toHaveBeenCalled()
     expect(screen.queryByText('Excluir personagem?')).not.toBeInTheDocument()
@@ -250,7 +253,7 @@ describe('FormScreen — seções colapsáveis', () => {
     const user = userEvent.setup()
     render(<FormScreen editId={null} onDone={vi.fn()} />)
     expect(screen.getByPlaceholderText('Nome do personagem')).toBeInTheDocument()
-    const header = screen.getByText('Identidade', { selector: '.fsec-hdr' })
+    const header = screen.getByText('Identidade', { selector: '.fsec-hdr-left', exact: false })
     await user.click(header)
     expect(screen.queryByPlaceholderText('Nome do personagem')).not.toBeInTheDocument()
   })
@@ -258,7 +261,7 @@ describe('FormScreen — seções colapsáveis', () => {
   it('click novamente no header reabre a seção', async () => {
     const user = userEvent.setup()
     render(<FormScreen editId={null} onDone={vi.fn()} />)
-    const header = screen.getByText('Identidade', { selector: '.fsec-hdr' })
+    const header = screen.getByText('Identidade', { selector: '.fsec-hdr-left', exact: false })
     await user.click(header)
     await user.click(header)
     expect(screen.getByPlaceholderText('Nome do personagem')).toBeInTheDocument()
@@ -358,8 +361,12 @@ describe('FormScreen — evolução', () => {
     expect(screen.getByText(/3º Patamar.*★ Patamar Atual/)).toBeInTheDocument()
   })
 
-  it('"atrib" tem 3 checks no bloco de evolução', () => {
+  it('"atrib" tem 3 checks no bloco de evolução', async () => {
+    const user = userEvent.setup()
     render(<FormScreen editId={null} onDone={vi.fn()} />)
+    // At nivel=1 all tiers are collapsed — expand P2 first
+    const p2Header = screen.getByText(/2º Patamar/i, { selector: '.evo-tier-hdr *', exact: false })
+    await user.click(p2Header.closest('.evo-tier-hdr')!)
     const atribTexts = screen.getAllByText(/atributos diferentes/i)
     // Primeiro elemento é o do 2º patamar
     const evoOpt = atribTexts[0].closest('.evo-opt')!

@@ -22,6 +22,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/entrypoint.sh:/app/entrypoint.sh
+      - ./backend/uploads:/app/uploads
     environment:
       - NODE_ENV=development
       - PORT=3001

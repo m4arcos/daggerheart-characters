@@ -602,6 +602,15 @@ describe('GET /api/cards', () => {
     expect(res.body[0].num).toBe(82);
   });
 
+  it('busca por número da carta', async () => {
+    await insertCard({ num: 82, tipo: 'dominio', nome: 'Proteção Rúnica', descricao: 'Desc', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
+    await insertCard({ num: 106, tipo: 'dominio', nome: 'Outra Carta', descricao: 'Desc', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });
+
+    const res = await request(app).get('/api/cards?q=82').set(auth(testToken));
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].num).toBe(82);
+  });
+
   it('filtra por card_tipo', async () => {
     await insertCard({ num: 82, tipo: 'dominio', nome: 'A', descricao: 'D', dominio_key: 'arcano', nivel_dominio: 1, custo: 0, card_tipo: 'Feitiço' });
     await insertCard({ num: 106, tipo: 'dominio', nome: 'B', descricao: 'D', dominio_key: 'lamina', nivel_dominio: 2, custo: 1, card_tipo: 'Talento' });

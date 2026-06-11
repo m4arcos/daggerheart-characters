@@ -30,8 +30,10 @@ export default function NumInput({ value, fallback = 0, min, max, onChange, ...r
       min={min}
       max={max}
       value={local}
+      style={{ textAlign: 'center', ...rest.style }}
       onChange={e => setLocal(e.target.value)}
       onBlur={e => commit(e.target.value)}
+      onFocus={e => e.target.select()}
     />
   );
 }

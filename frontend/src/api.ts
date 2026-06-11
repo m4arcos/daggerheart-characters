@@ -19,6 +19,19 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export async function uploadImage(file: File): Promise<{ url: string }> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/upload', {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export const api = {
   auth: {
     login: (email: string, senha: string) =>
@@ -74,6 +87,18 @@ export const api = {
     approveMember: (id: string, uid: string) => req<{ ok: boolean }>(`/campaigns/${id}/members/${uid}/approve`, { method: 'POST' }),
     removeMember: (id: string, uid: string) => req<{ ok: boolean }>(`/campaigns/${id}/members/${uid}`, { method: 'DELETE' }),
     getCharacters: (id: string) => req<import('./types/character').Character[]>(`/campaigns/${id}/characters`),
+    updateCover: (id: string, cover_image: string) =>
+      req<import('./types/campaign').Campaign>(`/campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cover_image }),
+      }),
+    updateStatus: (id: string, status: 'ativa' | 'pausada' | 'arquivada') =>
+      req<import('./types/campaign').Campaign>(`/campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      }),
   },
 
   cards: {
